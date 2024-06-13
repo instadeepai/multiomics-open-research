@@ -42,7 +42,13 @@ def get_pretrained_downstream_model(
     param_dtype: jnp.dtype = jnp.float32,
     output_dtype: jnp.dtype = jnp.float32,
     checkpoint_directory: str = CHECKPOINT_DIRECTORY,
-) -> tuple[hk.Params, Callable, BinnedExpressionTokenizer, RNASeqDownStreamConfig]:
+) -> tuple[
+    hk.Params,
+    Callable,
+    BinnedExpressionTokenizer,
+    RNASeqDownStreamConfig,
+    BulkRNABertConfig,
+]:
     """
     Create a Haiku Nucleotide Transformer
     model by downloading pre-trained weights and hyperparameters.
@@ -67,20 +73,21 @@ def get_pretrained_downstream_model(
         Haiku function to call the model.
         Tokenizer.
         Model config (hyperparameters).
+        Representation model (LM) config.
 
     """
     checkpoint_directory_path = pathlib.Path(checkpoint_directory)
     checkpoint_path = checkpoint_directory_path / model_name
 
     config = RNASeqDownStreamConfig.parse_file(checkpoint_path / "config.json")
-    mlm_model_config = BulkRNABertConfig.parse_file(
+    mlm_config = BulkRNABertConfig.parse_file(
         checkpoint_directory_path
         / config.rnaseq_representation_model.checkpoint_path.stem
         / "config.json"
     )
 
     tokenizer = BinnedExpressionTokenizer(
-        gene_expression_bins=np.array(mlm_model_config.rnaseq_tokenizer_bins),
+        gene_expression_bins=np.array(mlm_config.rnaseq_tokenizer_bins),
         prepend_cls_token=False,
     )
 
@@ -93,7 +100,7 @@ def get_pretrained_downstream_model(
         return model
 
     forward_fn = build_bulk_bert_with_head_fn(
-        model_config=mlm_model_config,
+        model_config=mlm_config,
         head_fn=head_fn,  # type: ignore
         compute_dtype=compute_dtype,
         param_dtype=param_dtype,
@@ -103,4 +110,4 @@ def get_pretrained_downstream_model(
 
     parameters = joblib.load(checkpoint_path / "params.joblib")
 
-    return parameters, forward_fn, tokenizer, config
+    return parameters, forward_fn, tokenizer, config, mlm_config
