@@ -20,6 +20,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
+        "click==8.1.7",
         "jax==0.4.19",
         "jaxlib==0.4.19",
         "dm-haiku==0.0.10",
