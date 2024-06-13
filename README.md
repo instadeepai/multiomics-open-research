@@ -8,12 +8,12 @@ In this repository, we provide code to use pre-trained model.
 
 We provide a sample of data in `data/tcga_sample.csv` to indicate the gene ids that must be used (and in which order they should appear).
 
-#### Get started 🚀
+### Get started 🚀
 
 To use the code and pre-trained models, simply:
 
 1. Clone the repository to your local machine.
-2. Install the package by running `pip install .`.
+2. Install the package by running `pip install -e .`.
 
 You can then do the inference using:
 ```python
@@ -48,3 +48,20 @@ mean_embedding = outs["embeddings_4"].mean(axis=1)
 ```
 Supported model names are:
 - **bulk_rna_bert_tcga**: BulkRNABert pre-trained on TCGA data.
+
+
+### Dataset preprocessing
+
+TCGA dataset has been obtained through the [GDC portal](https://portal.gdc.cancer.gov/).
+A sample of raw RNA-seq data is provided in the folder `data/raw_tcga_sample/` as downloaded from the portal. We also provide the preprocessing script (`scripts/preprocess_tcga_rna_seq.py`) that allows you to generate
+the preprocessed `data/tcga_sample.csv` file. This script uses the set of genes use by `BulkRNABert` that is provided in `data/common_gene_id.txt`.
+To run the preprocessing, one can use:
+
+
+```
+python scripts/preprocess_tcga_rna_seq.py \
+--dataset-path data/tcga_sample_gdc/ \
+--output-folder data/ \
+--common-gene-ids-path data/common_gene_id.txt \
+--rna-seq-column tpm_unstranded
+```
