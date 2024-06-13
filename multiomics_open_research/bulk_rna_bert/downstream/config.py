@@ -28,3 +28,14 @@ class RNASeqMLPConfig(BaseModel):
     layer_norm: bool = False
     mlp_activation: str = "selu"
     use_raw_rnaseq: bool = False
+
+
+class RnaseqRepresentationMLMConfig(BaseModel):
+    name: Literal["mlm"]
+    checkpoint_path: pathlib.Path
+    embeddings_layer_to_use: int
+
+
+class RNASeqDownStreamConfig(BaseModel):
+    rnaseq_representation_model: RnaseqRepresentationMLMConfig
+    model: RNASeqMLPConfig
