@@ -85,6 +85,10 @@ def get_pretrained_downstream_model(
         / config.rnaseq_representation_model.checkpoint_path.stem
         / "config.json"
     )
+    embeddings_layer_to_use = config.rnaseq_representation_model.embeddings_layer_to_use
+    if embeddings_layer_to_use == -1:
+        embeddings_layer_to_use = mlm_config.num_layers
+    mlm_config.embeddings_layers_to_save = (embeddings_layer_to_use,)
 
     tokenizer = BinnedExpressionTokenizer(
         gene_expression_bins=np.array(mlm_config.rnaseq_tokenizer_bins),
