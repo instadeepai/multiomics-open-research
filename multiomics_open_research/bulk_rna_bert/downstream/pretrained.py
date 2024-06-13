@@ -69,11 +69,14 @@ def get_pretrained_downstream_model(
         Model config (hyperparameters).
 
     """
-    checkpoint_path = pathlib.Path(checkpoint_directory) / model_name
+    checkpoint_directory_path = pathlib.Path(checkpoint_directory)
+    checkpoint_path = checkpoint_directory_path / model_name
 
     config = RNASeqDownStreamConfig.parse_file(checkpoint_path / "config.json")
     mlm_model_config = BulkRNABertConfig.parse_file(
-        config.rnaseq_representation_model.checkpoint_path / "config.json"
+        checkpoint_directory_path
+        / config.rnaseq_representation_model.checkpoint_path.stem
+        / "config.json"
     )
 
     tokenizer = BinnedExpressionTokenizer(
