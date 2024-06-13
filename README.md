@@ -6,7 +6,7 @@ In this BulkRNABert a transformer-based encoder-only language model pre-trained 
 BERT’s method. It achieves state-of-the-art performance in cancer type classification and survival time prediction on TCGA dataset.
 In this repository, we provide code to use pre-trained model.
 
-We provide a sample of data in `data/tcga_sample.csv` as well as a text file `common_gene_id.txt` that indicates the gene ids that must be used (and in which order they should appear).
+We provide a sample of data in `data/tcga_sample.csv` (from GBMLGG cohort) as well as a text file `common_gene_id.txt` that indicates the gene ids that must be used (and in which order they should appear).
 
 ### Get started 🚀
 
