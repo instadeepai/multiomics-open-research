@@ -2,7 +2,7 @@ Welcome to this InstaDeep Github repository that gathers the research work done 
 
 # BulkRNABert
 
-In this BulkRNABert a transformer-based encoder-only language model pre-trained on bulk RNA-seq data through self-supervision using masked language modeling from
+We present BulkRNABert, a transformer-based encoder-only language model pre-trained on bulk RNA-seq data through self-supervision using masked language modeling from
 BERT’s method. It achieves state-of-the-art performance in cancer type classification and survival time prediction on TCGA dataset.
 In this repository, we provide code to use pre-trained model.
 
@@ -69,3 +69,13 @@ python scripts/preprocess_tcga_rna_seq.py \
 ### Downstream task example
 
 A example notebook `examples/downstream_task_example.ipynb` illustrates an inference with the classification model trained on the 5 cohorts (BRCA, BLCA, GBMLGG, LUAD, UCEC) classification problem.
+
+## Citing our work 📚
+
+If you find this repository useful in your work, please add a citation to our associated paper:
+
+[BulkRNABert paper](https://www.biorxiv.org/):
+```bibtex
+@article{
+}
+```
