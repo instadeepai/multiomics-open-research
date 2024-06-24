@@ -146,6 +146,4 @@ def preprocess_rna_seq_for_bulkrnabert(
     rna_seq_array = rna_seq_df.to_numpy()
     if config.use_log_normalization:
         rna_seq_array = np.log10(rna_seq_array + 1)
-    if config.use_max_normalization:
-        rna_seq_array /= config.normalization_factor
     return rna_seq_array

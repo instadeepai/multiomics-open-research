@@ -24,11 +24,22 @@ class BinnedExpressionTokenizer:
 
     def __init__(
         self,
-        gene_expression_bins: np.ndarray,
+        n_expressions_bins: int,
+        use_max_normalization: bool = True,
+        normalization_factor: float = 1.0,
         prepend_cls_token: bool = False,
     ):
-        self._gene_expression_bins = gene_expression_bins
+        self._n_expressions_bins = n_expressions_bins
+        self._use_max_normalization = use_max_normalization
+        self._normalization_factor = normalization_factor
         self._prepend_cls_token = prepend_cls_token
+
+        if self._use_max_normalization:
+            self._gene_expression_bins = np.linspace(0.0, 1.0, self._n_expressions_bins)
+        else:
+            self._gene_expression_bins = np.linspace(
+                0.0, normalization_factor, self._n_expressions_bins
+            )
 
         standard_tokens = list(map(str, range(len(self._gene_expression_bins))))
         self._pad_token = "<pad>"
@@ -128,6 +139,8 @@ class BinnedExpressionTokenizer:
         Returns:
             List of tokens ids.
         """
+        if self._use_max_normalization:
+            gene_expressions /= self._normalization_factor
         tokens_ids = np.digitize(gene_expressions, self._gene_expression_bins)
         tokens_ids[gene_expressions == 0.0] = 0
         if self._prepend_cls_token:
