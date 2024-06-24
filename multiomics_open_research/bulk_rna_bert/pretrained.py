@@ -18,7 +18,6 @@ from typing import Callable
 import haiku as hk
 import jax.numpy as jnp
 import joblib
-import numpy as np
 
 from multiomics_open_research.bulk_rna_bert.config import BulkRNABertConfig
 from multiomics_open_research.bulk_rna_bert.model import build_bulk_rna_bert_forward_fn
@@ -66,7 +65,9 @@ def get_pretrained_model(
 
     config = BulkRNABertConfig.parse_file(checkpoint_path / "config.json")
     tokenizer = BinnedExpressionTokenizer(
-        gene_expression_bins=np.array(config.rnaseq_tokenizer_bins),
+        n_expressions_bins=config.n_expressions_bins,
+        use_max_normalization=config.use_max_normalization,
+        normalization_factor=config.normalization_factor,
         prepend_cls_token=False,
     )
 
