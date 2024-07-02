@@ -76,7 +76,7 @@ A example notebook `examples/downstream_task_example.ipynb` illustrates an infer
 
 If you find this repository useful in your work, please add a citation to our associated paper:
 
-[BulkRNABert paper](https://www.biorxiv.org/content/10.1101/2024.06.18.599483v3.full.pdf):
+[BulkRNABert paper](https://doi.org/10.1101/2024.06.18.599483):
 
 ```bibtex
 @article{gelard2024bulkrnabert,
