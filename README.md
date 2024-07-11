@@ -71,3 +71,20 @@ python scripts/preprocess_tcga_rna_seq.py \
 ### Downstream task example
 
 A example notebook `examples/downstream_task_example.ipynb` illustrates an inference with the classification model trained on the 5 cohorts (BRCA, BLCA, GBMLGG, LUAD, UCEC) classification problem.
+
+## Citing our work 📚
+
+If you find this repository useful in your work, please add a citation to our associated paper:
+
+[BulkRNABert paper](https://doi.org/10.1101/2024.06.18.599483):
+
+```bibtex
+@article{gelard2024bulkrnabert,
+  title={BulkRNABert: Cancer prognosis from bulk RNA-seq based language models},
+  author={Gelard, Maxence and Richard, Guillaume and Pierrot, Thomas and Cournede, Paul-Henry},
+  journal={bioRxiv},
+  year={2024},
+  doi={10.1101/2024.06.18.599483},
+  publisher={Cold Spring Harbor Laboratory},
+}
+```
