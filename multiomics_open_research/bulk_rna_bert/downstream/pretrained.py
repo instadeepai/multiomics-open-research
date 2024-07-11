@@ -18,7 +18,6 @@ from typing import Callable
 import haiku as hk
 import jax.numpy as jnp
 import joblib
-import numpy as np
 
 from multiomics_open_research.bulk_rna_bert.config import BulkRNABertConfig
 from multiomics_open_research.bulk_rna_bert.downstream.config import (
@@ -91,7 +90,9 @@ def get_pretrained_downstream_model(
     mlm_config.embeddings_layers_to_save = (embeddings_layer_to_use,)
 
     tokenizer = BinnedExpressionTokenizer(
-        gene_expression_bins=np.array(mlm_config.rnaseq_tokenizer_bins),
+        n_expressions_bins=mlm_config.n_expressions_bins,
+        use_max_normalization=mlm_config.use_max_normalization,
+        normalization_factor=mlm_config.normalization_factor,
         prepend_cls_token=False,
     )
 
