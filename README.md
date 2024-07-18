@@ -70,7 +70,7 @@ python scripts/preprocess_tcga_rna_seq.py \
 
 ### Downstream task example
 
-A example notebook `examples/downstream_task_example.ipynb` illustrates an inference with the classification model trained on the 5 cohorts (BRCA, BLCA, GBMLGG, LUAD, UCEC) classification problem.
+An example notebook `examples/downstream_task_example.ipynb` illustrates an inference with the classification model trained on the 5 cohorts (BRCA, BLCA, GBMLGG, LUAD, UCEC) classification problem.
 
 ## Citing our work 📚
 
