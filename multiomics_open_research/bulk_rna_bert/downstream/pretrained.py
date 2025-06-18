@@ -1,4 +1,4 @@
-# Copyright 2024 InstaDeep Ltd
+# Copyright 2025 InstaDeep Ltd
 #
 # Licensed under the Creative Commons BY-NC-SA 4.0 License (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ from multiomics_open_research.bulk_rna_bert.downstream.model import (
     build_bulk_bert_with_head_fn,
 )
 from multiomics_open_research.bulk_rna_bert.pretrained import CHECKPOINT_DIRECTORY
-from multiomics_open_research.bulk_rna_bert.tokenizer import BinnedExpressionTokenizer
+from multiomics_open_research.common.tokenizer import BinnedOmicTokenizer
 
 MODEL_NAME_TO_HEAD_NAME = {
     "tcga_5_cohorts": "classification_head",
@@ -44,7 +44,7 @@ def get_pretrained_downstream_model(
 ) -> tuple[
     hk.Params,
     Callable,
-    BinnedExpressionTokenizer,
+    BinnedOmicTokenizer,
     RNASeqDownStreamConfig,
     BulkRNABertConfig,
 ]:
@@ -89,7 +89,7 @@ def get_pretrained_downstream_model(
         embeddings_layer_to_use = mlm_config.num_layers
     mlm_config.embeddings_layers_to_save = (embeddings_layer_to_use,)
 
-    tokenizer = BinnedExpressionTokenizer(
+    tokenizer = BinnedOmicTokenizer(
         n_expressions_bins=mlm_config.n_expressions_bins,
         use_max_normalization=mlm_config.use_max_normalization,
         normalization_factor=mlm_config.normalization_factor,

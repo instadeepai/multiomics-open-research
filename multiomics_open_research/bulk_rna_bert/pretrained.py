@@ -1,4 +1,4 @@
-# Copyright 2024 InstaDeep Ltd
+# Copyright 2025 InstaDeep Ltd
 #
 # Licensed under the Creative Commons BY-NC-SA 4.0 License (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import joblib
 
 from multiomics_open_research.bulk_rna_bert.config import BulkRNABertConfig
 from multiomics_open_research.bulk_rna_bert.model import build_bulk_rna_bert_forward_fn
-from multiomics_open_research.bulk_rna_bert.tokenizer import BinnedExpressionTokenizer
+from multiomics_open_research.common.tokenizer import BinnedOmicTokenizer
 
 CHECKPOINT_DIRECTORY = "checkpoints/"
 
@@ -33,11 +33,10 @@ def get_pretrained_model(
     output_dtype: jnp.dtype = jnp.float32,
     embeddings_layers_to_save: tuple[int, ...] = (),
     checkpoint_directory: str = CHECKPOINT_DIRECTORY,
-) -> tuple[hk.Params, Callable, BinnedExpressionTokenizer, BulkRNABertConfig]:
+) -> tuple[hk.Params, Callable, BinnedOmicTokenizer, BulkRNABertConfig]:
     """
-    Create a Haiku Nucleotide Transformer
+    Create a Haiku BulkRNABert model.
     model by downloading pre-trained weights and hyperparameters.
-    Nucleotide Transformer Models have ESM-like architectures.
 
     Args:
         model_name: Name of the model.
@@ -64,7 +63,7 @@ def get_pretrained_model(
     checkpoint_path = pathlib.Path(checkpoint_directory) / model_name
 
     config = BulkRNABertConfig.parse_file(checkpoint_path / "config.json")
-    tokenizer = BinnedExpressionTokenizer(
+    tokenizer = BinnedOmicTokenizer(
         n_expressions_bins=config.n_expressions_bins,
         use_max_normalization=config.use_max_normalization,
         normalization_factor=config.normalization_factor,

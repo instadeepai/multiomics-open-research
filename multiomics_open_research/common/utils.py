@@ -1,4 +1,4 @@
-# Copyright 2024 InstaDeep Ltd
+# Copyright 2025 InstaDeep Ltd
 #
 # Licensed under the Creative Commons BY-NC-SA 4.0 License (the "License");
 # you may not use this file except in compliance with the License.

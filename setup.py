@@ -29,6 +29,8 @@ setup(
         "pandas==2.2.0",
         "pydantic==1.10.5",
         "torch==2.2.0",
+        "jupyter",
+        "huggingface-hub>=0.23.0",
     ],
     dependency_links=[
         "https://storage.googleapis.com/jax-releases/jax_releases.html",
