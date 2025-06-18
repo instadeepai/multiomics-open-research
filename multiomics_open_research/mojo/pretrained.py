@@ -119,7 +119,7 @@ def get_mojo_pretrained_model(
         compute_dtype=compute_dtype,
         param_dtype=param_dtype,
         output_dtype=output_dtype,
-        model_name="multiomics_lm",
+        model_name="multi_omics_lm",
     )
 
     return parameters, forward_fn, tokenizers, config
