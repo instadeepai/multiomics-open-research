@@ -105,6 +105,8 @@ def get_mojo_pretrained_model(
     tokenizers = {
         omic: BinnedOmicTokenizer(
             n_expressions_bins=config.n_expressions_bins[omic],
+            min_omic_value=config.min_omic_value[omic],
+            max_omic_value=config.max_omic_value[omic],
             use_max_normalization=config.use_max_normalization[omic],
             normalization_factor=config.normalization_factor[omic],
             prepend_cls_token=False,

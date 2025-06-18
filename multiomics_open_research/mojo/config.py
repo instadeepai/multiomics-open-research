@@ -53,6 +53,8 @@ class MOJOConfig(BaseModel):
     num_hidden_layers_head: int = 0
 
     n_expressions_bins: dict[str, int]
+    min_omic_value: dict[str, float]
+    max_omic_value: dict[str, float]
     use_log_normalization: dict[str, bool]
     use_max_normalization: dict[str, bool]
     normalization_factor: dict[str, float]

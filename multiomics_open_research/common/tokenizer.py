@@ -25,6 +25,8 @@ class BinnedOmicTokenizer:
     def __init__(
         self,
         n_expressions_bins: int,
+        min_omic_value: float = 0.0,
+        max_omic_value: float = 1.0,
         use_max_normalization: bool = True,
         normalization_factor: float = 1.0,
         prepend_cls_token: bool = False,
@@ -37,10 +39,12 @@ class BinnedOmicTokenizer:
         self._prepend_cls_token = prepend_cls_token
 
         if self._use_max_normalization:
-            self._gene_expression_bins = np.linspace(0.0, 1.0, self._n_expressions_bins)
+            self._gene_expression_bins = np.linspace(
+                min_omic_value, max_omic_value, self._n_expressions_bins
+            )
         else:
             self._gene_expression_bins = np.linspace(
-                0.0, normalization_factor, self._n_expressions_bins
+                min_omic_value, max_omic_value, self._n_expressions_bins
             )
 
         self._fixed_sequence_length = fixed_sequence_length
