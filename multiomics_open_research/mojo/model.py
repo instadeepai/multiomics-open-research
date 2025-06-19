@@ -237,9 +237,7 @@ class MOJO(hk.Module):
             )
             if self._config.project_gene_embedding:
                 gene_embedding = self._fc_gene_embedding(gene_embedding)
-            n_repeats = x.shape[-1] // self._config.token_embed_dim
-            x = x + jnp.tile(gene_embedding, (1, 1, n_repeats))
-
+            x = x + gene_embedding
             outs["embeddings_with_gene_embedding"] = x
 
         x = self.stem(x)
