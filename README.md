@@ -96,7 +96,7 @@ forward_fn = hk.transform(forward_fn)
 # Get bulk RNASeq and Methylation data and tokenize them
 omic_dfs = {
     "rnaseq": pd.read_csv("data/mojo/tcga_rnaseq_sample.csv"),
-    "methylation": pd.read_csv("data/mojo/tcga_methylation.csv")
+    "methylation": pd.read_csv("data/mojo/tcga_methylation_sample.csv")
 }
 omic_arrays = {
     omic: preprocess_omic(df, config, omic)
@@ -112,7 +112,7 @@ random_key = jax.random.PRNGKey(0)
 outs = forward_fn.apply(parameters, random_key, tokens_ids)
 
 # Get embedding from last transformer layer
-embedding = outs["after_transformer_embedding"].mean(axis=1)
+mean_embedding = outs["after_transformer_embedding"].mean(axis=1)
 ```
 
 ## Citing our work 📚
