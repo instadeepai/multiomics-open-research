@@ -10,6 +10,9 @@ To use the code and pre-trained models, simply:
 
 # 1. BulkRNABert
 
+* 📜 **[Read the Paper (Machine Learning for Health 2024)](https://proceedings.mlr.press/v259/gelard25a.html)**
+* 🤗 **[Hugging Face Link](https://huggingface.co/InstaDeepAI/BulkRNABert)**
+
 We present BulkRNABert, a transformer-based encoder-only language model pre-trained on bulk RNA-seq data through self-supervision using masked language modeling from
 BERT’s method. It achieves state-of-the-art performance in cancer type classification and survival time prediction on TCGA dataset.
 In this repository, we provide code to use pre-trained model.
@@ -75,6 +78,9 @@ An example notebook `examples/downstream_task_example.ipynb` illustrates an infe
 
 # 2. MOJO
 
+* 📜 **[Read the Paper (ICML Workshop on Generative AI and Biology 2025)]()**
+* 🤗 **[Hugging Face Link](https://huggingface.co/InstaDeepAI/MOJO)**
+
 MOJO is a model that learns joint representations of bulk RNA-seq and DNA methylation tailored for cancer-type classification and survival analysis.
 
 We provide in `data/mojo` samples of bulk RNA-seq and DNA Methylation data extracted from TCGA dataset.
@@ -119,7 +125,7 @@ mean_embedding = outs["after_transformer_embedding"].mean(axis=1)
 
 If you find this repository useful in your work, please add a citation to our associated papers:
 
-[BulkRNABert](https://doi.org/10.1101/2024.06.18.599483):
+[BulkRNABert](https://proceedings.mlr.press/v259/gelard25a.html):
 
 ```bibtex
 @InProceedings{pmlr-v259-gelard25a,
@@ -135,4 +141,9 @@ If you find this repository useful in your work, please add a citation to our as
   publisher =    {PMLR},
   url = 	 {https://proceedings.mlr.press/v259/gelard25a.html},
 }
+```
+
+[MOJO]():
+
+```bibtex
 ```
