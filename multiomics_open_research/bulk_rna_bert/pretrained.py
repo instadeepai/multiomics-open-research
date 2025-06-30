@@ -26,7 +26,7 @@ from multiomics_open_research.common.tokenizer import BinnedOmicTokenizer
 CHECKPOINT_DIRECTORY = "checkpoints/"
 
 
-def get_pretrained_model(
+def get_bulkrnabert_pretrained_model(
     model_name: str,
     compute_dtype: jnp.dtype = jnp.float32,
     param_dtype: jnp.dtype = jnp.float32,
