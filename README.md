@@ -78,7 +78,7 @@ An example notebook `examples/downstream_task_example.ipynb` illustrates an infe
 
 # 2. MOJO
 
-* 📜 **[Read the Paper (ICML Workshop on Generative AI and Biology 2025)]()**
+* 📜 **[Read the Paper (ICML Workshop on Generative AI and Biology 2025)](https://www.biorxiv.org/content/10.1101/2025.06.25.661237v1)**
 * 🤗 **[Hugging Face Link](https://huggingface.co/InstaDeepAI/MOJO)**
 
 MOJO is a model that learns joint representations of bulk RNA-seq and DNA methylation tailored for cancer-type classification and survival analysis.
@@ -143,7 +143,17 @@ If you find this repository useful in your work, please add a citation to our as
 }
 ```
 
-[MOJO]():
+[MOJO](https://www.biorxiv.org/content/10.1101/2025.06.25.661237v1):
 
 ```bibtex
+@article {G{\'e}lard2025.06.25.661237,
+	author = {G{\'e}lard, Maxence and Benkirane, Hakim and Pierrot, Thomas and Richard, Guillaume and Courn{\`e}de, Paul-Henry},
+	title = {Bimodal masked language modeling for bulk RNA-seq and DNA methylation representation learning},
+	elocation-id = {2025.06.25.661237},
+	year = {2025},
+	doi = {10.1101/2025.06.25.661237},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2025/06/27/2025.06.25.661237},
+	journal = {bioRxiv}
+}
 ```
