@@ -38,17 +38,17 @@ parameters, forward_fn, tokenizer, config = get_bulkrnabert_pretrained_model(
 forward_fn = hk.transform(forward_fn)
 
 # Get bulk RNASeq data and tokenize it
-rna_seq_df = pd.read_csv("data/bulkrnabert/tcga_sample.csv")
-rna_seq_array = preprocess_omic(rna_seq_df, config)
-tokens_ids = tokenizer.batch_tokenize(rna_seq_array)
-tokens = jnp.asarray(tokens_ids, dtype=jnp.int32)
+gene_expression_df = pd.read_csv("data/bulkrnabert/tcga_sample.csv")
+gene_expression_array = preprocess_omic(gene_expression_df, config)
+gene_expression_ids = tokenizer.batch_tokenize(rna_seq_array)
+gene_expression_ids = jnp.asarray(gene_expression_ids, dtype=jnp.int32)
 
 # Inference
 random_key = jax.random.PRNGKey(0)
-outs = forward_fn.apply(parameters, random_key, tokens)
+outs = forward_fn.apply(parameters, random_key, gene_expression_ids)
 
 # Get mean embeddings from layer 4
-mean_embedding = outs["embeddings_4"].mean(axis=1)
+gene_expression_mean_embeddings = outs["embeddings_4"].mean(axis=1)
 ```
 Supported model names are:
 - **bulk_rna_bert_tcga**: BulkRNABert pre-trained on TCGA data.
