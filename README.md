@@ -26,11 +26,11 @@ import jax
 import jax.numpy as jnp
 import pandas as pd
 
-from multiomics_open_research.bulk_rna_bert.pretrained import get_pretrained_model
+from multiomics_open_research.bulk_rna_bert.pretrained import get_bulkrnabert_pretrained_model
 from multiomics_open_research.common.preprocess import preprocess_omic
 
 # Get pretrained model
-parameters, forward_fn, tokenizer, config = get_pretrained_model(
+parameters, forward_fn, tokenizer, config = get_bulkrnabert_pretrained_model(
     model_name="bulk_rna_bert_tcga",
     embeddings_layers_to_save=(4,),
     checkpoint_directory="checkpoints/",
