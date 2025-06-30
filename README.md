@@ -40,7 +40,7 @@ forward_fn = hk.transform(forward_fn)
 # Get bulk RNASeq data and tokenize it
 gene_expression_df = pd.read_csv("data/bulkrnabert/tcga_sample.csv")
 gene_expression_array = preprocess_omic(gene_expression_df, config)
-gene_expression_ids = tokenizer.batch_tokenize(rna_seq_array)
+gene_expression_ids = tokenizer.batch_tokenize(gene_expression_array)
 gene_expression_ids = jnp.asarray(gene_expression_ids, dtype=jnp.int32)
 
 # Inference
