@@ -1,4 +1,4 @@
-# Copyright 2024 InstaDeep Ltd
+# Copyright 2025 InstaDeep Ltd
 #
 # Licensed under the Creative Commons BY-NC-SA 4.0 License (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ import jax.numpy as jnp
 import jmp
 
 from multiomics_open_research.bulk_rna_bert.config import BulkRNABertConfig
-from multiomics_open_research.bulk_rna_bert.layers import (
-    SelfAttentionBlock,
-    SimpleLMHead,
-)
-from multiomics_open_research.bulk_rna_bert.type_defs import (
+from multiomics_open_research.bulk_rna_bert.layers import SimpleLMHead
+from multiomics_open_research.common.layers import SelfAttentionBlock
+from multiomics_open_research.common.type_defs import (
     AttentionMask,
     Embedding,
     Tokens,
@@ -33,7 +31,7 @@ from multiomics_open_research.bulk_rna_bert.type_defs import (
 
 class BulkRNABert(hk.Module):
     """
-    Jax implementation of BulRNABert model.
+    Jax implementation of BulkRNABert model.
     """
 
     def __init__(

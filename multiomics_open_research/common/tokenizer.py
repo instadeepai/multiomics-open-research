@@ -1,4 +1,4 @@
-# Copyright 2024 InstaDeep Ltd
+# Copyright 2025 InstaDeep Ltd
 #
 # Licensed under the Creative Commons BY-NC-SA 4.0 License (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,17 +17,21 @@ from typing import List
 import numpy as np
 
 
-class BinnedExpressionTokenizer:
+class BinnedOmicTokenizer:
     """
-    Tokenizer that bins gene expressions to convert them to tokens.
+    Tokenizer that bins gene expressions or methylation to convert them to tokens.
     """
 
     def __init__(
         self,
         n_expressions_bins: int,
+        min_omic_value: float = 0.0,
+        max_omic_value: float = 1.0,
         use_max_normalization: bool = True,
         normalization_factor: float = 1.0,
         prepend_cls_token: bool = False,
+        fixed_sequence_length: int | None = None,
+        unpadded_length: int | None = None,
     ):
         self._n_expressions_bins = n_expressions_bins
         self._use_max_normalization = use_max_normalization
@@ -35,11 +39,16 @@ class BinnedExpressionTokenizer:
         self._prepend_cls_token = prepend_cls_token
 
         if self._use_max_normalization:
-            self._gene_expression_bins = np.linspace(0.0, 1.0, self._n_expressions_bins)
+            self._gene_expression_bins = np.linspace(
+                min_omic_value, max_omic_value, self._n_expressions_bins
+            )
         else:
             self._gene_expression_bins = np.linspace(
-                0.0, normalization_factor, self._n_expressions_bins
+                min_omic_value, max_omic_value, self._n_expressions_bins
             )
+
+        self._fixed_sequence_length = fixed_sequence_length
+        self._unpadded_length = unpadded_length
 
         standard_tokens = list(map(str, range(len(self._gene_expression_bins))))
         self._pad_token = "<pad>"
@@ -48,15 +57,19 @@ class BinnedExpressionTokenizer:
         self._unk_token = "<unk>"
         self._eos_token = "<eos>"
         self._bos_token = "<bos>"
+        self._missing_modality_token = "<mmo>"
 
-        special_tokens = [
-            self._pad_token,
-            self._mask_token,
-            self._class_token,
-            self._unk_token,
-            self._eos_token,
-            self._bos_token,
-        ]
+        if prepend_cls_token:
+            special_tokens = [
+                self._class_token,
+                self._pad_token,
+                self._mask_token,
+            ]
+        else:
+            special_tokens = [
+                self._pad_token,
+                self._mask_token,
+            ]
 
         self._all_tokens = standard_tokens + special_tokens
         self._standard_tokens = standard_tokens
@@ -76,6 +89,16 @@ class BinnedExpressionTokenizer:
     @property
     def mask_token(self) -> str:
         return self._mask_token
+
+    @property
+    def mask_token_id(self) -> int:
+        """
+        Property that returns id (int representation) of the mask token.
+
+        Returns:
+            Id (int representation) of the mask token.
+        """
+        return self.token_to_id(self.mask_token)
 
     @property
     def class_token(self) -> str:
@@ -129,32 +152,70 @@ class BinnedExpressionTokenizer:
         except KeyError:
             raise KeyError(f"Token {token} not found in vocabulary")
 
-    def tokenize(self, gene_expressions: np.ndarray) -> np.ndarray:
+    def tokenize(
+        self,
+        gene_expressions: np.ndarray | None,
+        pad_to_fixed_length: bool = False,
+        max_length: int | None = None,
+    ) -> np.ndarray:
         """
         Tokenize a gene expression array and return an array of bin ids.
 
         Args:
             gene_expressions: Gene expressions sequence to be tokenized.
-
+            pad_to_fixed_length: if True and fixed length is provided as attributed
+            to the tokenizer, the sequence will be padded.
+            max_length: allows to pass another max length than the one specified
+            by self._fixed_sequence_length
         Returns:
             List of tokens ids.
         """
-        if self._use_max_normalization:
-            gene_expressions /= self._normalization_factor
-        tokens_ids = np.digitize(gene_expressions, self._gene_expression_bins)
-        tokens_ids[gene_expressions == 0.0] = 0
+        if gene_expressions is None:
+            assert self._unpadded_length is not None
+            tokens_ids = np.array([self.mask_token_id] * self._unpadded_length)
+        else:
+            if self._use_max_normalization:
+                gene_expressions /= self._normalization_factor
+            tokens_ids = np.digitize(gene_expressions, self._gene_expression_bins)
+            tokens_ids[gene_expressions == 0.0] = 0
         if self._prepend_cls_token:
             tokens_ids = np.concatenate([[self.class_id], tokens_ids])
+        if pad_to_fixed_length:
+            if self._fixed_sequence_length is not None:
+                current_max_length = self._fixed_sequence_length
+            else:
+                assert max_length is not None
+                current_max_length = max_length
+            padded_tokens_ids = np.ones(
+                current_max_length, dtype=tokens_ids.dtype
+            ) * self.token_to_id(self._pad_token)
+            padded_tokens_ids[: len(tokens_ids)] = tokens_ids
+            return padded_tokens_ids
         return tokens_ids
 
-    def batch_tokenize(self, gene_expressions: np.ndarray) -> np.ndarray:
+    def batch_tokenize(
+        self,
+        gene_expressions: np.ndarray,
+        pad_to_fixed_length: bool = False,
+        max_length: int | None = None,
+    ) -> np.ndarray:
         """
         Tokenizes a batch of gene expressions.
 
         Args:
             gene_expressions: gene expressions sequence to be tokenized.
+            pad_to_fixed_length: if True and fixed length is provided as attributed
+            to the tokenizer, the sequence will be padded.
+            max_length: max length in the batch
 
         Returns:
             Tokenized gene expressions.
         """
-        return np.vstack([self.tokenize(g) for g in gene_expressions])
+        return np.vstack(
+            [
+                self.tokenize(
+                    g, pad_to_fixed_length=pad_to_fixed_length, max_length=max_length
+                )
+                for g in gene_expressions
+            ]
+        )

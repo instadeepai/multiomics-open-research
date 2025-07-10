@@ -1,4 +1,4 @@
-# Copyright 2024 InstaDeep Ltd
+# Copyright 2025 InstaDeep Ltd
 #
 # Licensed under the Creative Commons BY-NC-SA 4.0 License (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, TypeAlias
+from dataclasses import dataclass
+from typing import Optional
 
-import jax.numpy as jnp
 
-Embedding: TypeAlias = jnp.ndarray
-Tokens: TypeAlias = jnp.ndarray
-AttentionMask: TypeAlias = jnp.ndarray
-TransformerOutput: TypeAlias = Dict[str, jnp.ndarray]  # type: ignore
+@dataclass
+class RotaryEmbeddingConfig:
+    """
+    Parameters to initialize the RotaryEmbedding layer. The rescaling factor allows
+    to adapt the rotary embeddings to larger lengths than what was used for training.
+    One of this strategy is presented in the Yarn paper: https://arxiv.org/pdf/2309.00071.pdf. # noqa
+
+    Args:
+
+    """
+
+    rescaling_factor: Optional[float]

@@ -1,4 +1,4 @@
-# Copyright 2024 InstaDeep Ltd
+# Copyright 2025 InstaDeep Ltd
 #
 # Licensed under the Creative Commons BY-NC-SA 4.0 License (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,10 +16,7 @@ import logging
 from collections import defaultdict
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-
-from multiomics_open_research.bulk_rna_bert.config import BulkRNABertConfig
 
 MIN_COMMON_GENES = 18_000
 DEFAULT_GENE_VERSION = "1"
@@ -136,14 +133,3 @@ def preprocess_tcga_rna_seq_dataset(
 
     df_preprocessed = pd.DataFrame(preprocessed_rows, columns=preprocessed_df_columns)
     df_preprocessed.to_csv(output_file, index=False)
-
-
-def preprocess_rna_seq_for_bulkrnabert(
-    rna_seq_df: pd.DataFrame, config: BulkRNABertConfig
-) -> np.ndarray:
-    if "identifier" in rna_seq_df.columns:
-        rna_seq_df = rna_seq_df.drop(["identifier"], axis=1)
-    rna_seq_array = rna_seq_df.to_numpy()
-    if config.use_log_normalization:
-        rna_seq_array = np.log10(rna_seq_array + 1)
-    return rna_seq_array
