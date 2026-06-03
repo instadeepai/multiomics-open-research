@@ -25,7 +25,7 @@ setup(
         "jaxlib==0.4.19",
         "dm-haiku==0.0.10",
         "joblib==1.3.2",
-        "numpy==1.25",
+        "numpy==1.26",
         "pandas==2.2.0",
         "pydantic==1.10.13",
         "jupyter",
