@@ -32,6 +32,7 @@ from multiomics_open_research.common.tokenizer import BinnedOmicTokenizer
 
 MODEL_NAME_TO_HEAD_NAME = {
     "tcga_5_cohorts": "classification_head",
+    "tcga_pancancer_survival": "omic_survival_mlp",
 }
 
 

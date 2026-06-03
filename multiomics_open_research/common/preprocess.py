@@ -24,7 +24,9 @@ def preprocess_omic(
     config: BulkRNABertConfig | MOJOConfig,
     omic: str | None = None,
 ) -> np.ndarray:
-    omic_df = omic_df.drop(["identifier", "cohort"], axis=1, errors="ignore")
+    omic_df = omic_df.drop(
+        ["identifier", "cohort", "survival_time", "event"], axis=1, errors="ignore"
+    )
     omic_array = omic_df.to_numpy()
     if isinstance(config.use_log_normalization, dict):
         assert omic is not None
