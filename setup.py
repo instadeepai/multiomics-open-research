@@ -30,6 +30,7 @@ setup(
         "pydantic==1.10.13",
         "jupyter",
         "huggingface-hub>=0.23.0",
+        "matplotlib==3.10.9",
     ],
     dependency_links=[
         "https://storage.googleapis.com/jax-releases/jax_releases.html",
