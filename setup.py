@@ -27,15 +27,28 @@ setup(
         "joblib==1.3.2",
         "numpy==1.26",
         "pandas==2.2.0",
+        "python-dateutil<3.0.0",
         "pydantic==1.10.13",
         "jupyter",
-        "huggingface-hub>=0.23.0",
+        "huggingface-hub>=0.30.0",
         "matplotlib==3.10.9",
+        # CellScribe (PyTorch). transformers is pinned: CellScribe's layer-norm
+        # conditioning relies on this version's Qwen2 decoder-layer interface.
+        "torch>=2.2",
+        "transformers==4.51.0",
+        "safetensors",
     ],
     dependency_links=[
         "https://storage.googleapis.com/jax-releases/jax_releases.html",
     ],
-    keywords=["Multi-omics", "Language Model", "Deep Learning", "JAX"],
+    keywords=[
+        "Multi-omics",
+        "Language Model",
+        "Deep Learning",
+        "JAX",
+        "PyTorch",
+        "Single-cell",
+    ],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Console",

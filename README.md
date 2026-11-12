@@ -1,5 +1,15 @@
 Welcome to this InstaDeep Github repository that gathers the research work done by [Maxence Gélard](https://www.linkedin.com/in/maxence-g%C3%A9lard-015761172/) in the context of his PhD.
 
+### Models 🧬
+
+This repository provides the code and pre-trained weights of three models:
+
+| Model | Data | Description | Framework |
+|---|---|---|---|
+| [1. BulkRNABert](#1-bulkrnabert) ([paper](https://proceedings.mlr.press/v259/gelard25a.html)) | Bulk RNA-seq | Transformer encoder pre-trained with masked language modeling, whose embeddings are used for cancer-type classification and survival prediction. | JAX |
+| [2. MOJO](#2-mojo) ([paper](https://proceedings.mlr.press/v306/gelard26a.html)) | Bulk RNA-seq + DNA methylation | Bimodal model learning joint representations of both modalities for cancer-type classification and survival analysis. | JAX |
+| [3. CellScribe](#3-cellscribe) ([paper](https://www.biorxiv.org/content/10.64898/2026.10.07.757352)) | Single-cell RNA-seq | Language model conditioned on single-cell foundation model embeddings that generates a cell's type and its active malignant meta-programs in natural language. | PyTorch |
+
 ### Get started 🚀
 
 To use the code and pre-trained models, simply:
@@ -78,7 +88,7 @@ An example notebook `examples/downstream_task_example.ipynb` illustrates an infe
 
 # 2. MOJO
 
-* 📜 **[Read the Paper (ICML Workshop on Generative AI and Biology 2025)](https://www.biorxiv.org/content/10.1101/2025.06.25.661237v1)**
+* 📜 **[Read the Paper (ICML 2026)](https://proceedings.mlr.press/v306/gelard26a.html)**
 * 🤗 **[Hugging Face Link](https://huggingface.co/InstaDeepAI/MOJO)**
 
 MOJO is a model that learns joint representations of bulk RNA-seq and DNA methylation tailored for cancer-type classification and survival analysis.
@@ -121,6 +131,173 @@ outs = forward_fn.apply(parameters, random_key, tokens_ids)
 mean_embedding = outs["after_transformer_embedding"].mean(axis=1)
 ```
 
+# 3. CellScribe
+
+* 📜 **[Read the Paper (bioRxiv 2026)](https://www.biorxiv.org/content/10.64898/2026.10.07.757352)**
+* 🤗 **[Hugging Face Link](https://huggingface.co/InstaDeepAI/CellScribe)**
+
+CellScribe is a generative framework that describes a cell along two complementary axes in a single
+model: its *identity* (lineage) and its *state* (active transcriptional programs). It conditions a
+pretrained language model ([Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct),
+[Qwen Team, 2024](https://arxiv.org/abs/2412.15115)) on frozen embeddings of a single-cell foundation
+model ([scFoundation](https://www.nature.com/articles/s41592-024-02305-7), Hao et al., 2024) through
+adaptive layer normalization (AdaLN, [Peebles and Xie, 2023](https://arxiv.org/abs/2212.09748)): the
+cell embedding sets the scale and shift of every layer normalization of the language model.
+Depending on the task-specific prompt, the same model generates:
+- **cell typing**: an ontology-grounded cell type (Cell Ontology vocabulary of CELLxGENE), e.g.
+  `"The cell type is B cell."`;
+- **cell state**: a quantified meta-program profile. Meta-programs are the 41 recurrent malignant
+  programs identified across 24 cancer types with the Curated Cancer Cell Atlas (3CA) by
+  [Gavish et al., *Hallmarks of transcriptional intratumour heterogeneity across a thousand tumours*,
+  Nature 2023](https://www.nature.com/articles/s41586-023-06130-4), and grouped into 11 hallmarks.
+  CellScribe lists the active programs with their activity scores and the dominant hallmark, e.g.
+  `"Active programs: Cell Cycle - G2/M (1.9), EMT-II (1.1). Dominant hallmark: Cell cycle."`.
+
+The paper also describes reinforcement learning against cell-ontology distance and meta-program
+agreement. Beyond these two tasks, CellScribe identifies cell types outside its supervised
+vocabulary through in-context learning (see below).
+
+The CellScribe weights are for non-commercial research use only. They include the unmodified
+scFoundation encoder weights, which remain under the
+[scFoundation Model License](https://github.com/biomap-research/scFoundation/blob/main/MODEL_LICENSE)
+of BioMap (see the `LICENSE.md` of the Hugging Face repository for the full terms).
+
+Unlike BulkRNABert and MOJO, CellScribe is implemented in PyTorch. Inputs are raw UMI counts
+(not normalised) with HGNC gene symbols as gene names. Genes missing from the input are set to
+zero. We provide in `data/cellscribe` two samples of held-out cells: CELLxGENE cells for cell typing
+and malignant cells from the Curated Cancer Cell Atlas (3CA) for cell state. To predict their cell
+type and cell state, one can use the following code snippet:
+
+```python
+import pandas as pd
+
+from multiomics_open_research.cellscribe.pretrained import get_cellscribe_predictor
+
+# Get pretrained CellScribe predictor
+predictor = get_cellscribe_predictor(device="cuda")  # or "cpu"
+
+# Cell typing
+cells = pd.read_csv("data/cellscribe/cell_typing_sample.csv", index_col=0)
+cell_types = predictor.predict_cell_type(cells.values, list(cells.columns))
+print(cell_types)
+# ['CD4-positive, alpha-beta cytotoxic T cell', 'immature B cell',
+#  'CD16-negative, CD56-bright natural killer cell, human', 'CD14-low, CD16-positive monocyte']
+
+# Cell state
+cells = pd.read_csv("data/cellscribe/cell_state_sample.csv", index_col=0)
+for prediction in predictor.predict_cell_state(cells.values, list(cells.columns)):
+    print(prediction.programs, prediction.hallmark)
+# [('Stress (in vitro)', 0.9), ('Stress', 0.8), ('Translation initiation', 0.7), ('MYC-targets', 0.6)] Stress or hypoxia
+# [('Unfolded protein response', 1.1), ('immunoglobulins (IGs)', 1.0), ('Protein maturation', 0.8), ('Interferon/MHC-II (I)', 0.8), ('Stress', 0.7)] Protein regulation
+# [('Cell Cycle - G1/S', 1.8), ('Cell Cycle - G2/M', 1.7), ('Cell cycle (HMG-rich)', 1.4), ('MYC-targets', 0.9), ('EMT-II', 0.8)] Cell cycle
+# [('MYC-targets', 1.0), ('Cell Cycle - G2/M', 0.9), ('Cell cycle (HMG-rich)', 0.7), ('Respiration', 0.6)] Oncogenic
+```
+
+An `AnnData` object holding raw counts can be used directly with
+`predictor.predict_anndata(adata, task="cell_typing")` (or `task="cell_state"`). For CELLxGENE files,
+first set `adata.var_names = adata.var["feature_name"]` so that genes are named by their symbols.
+Cells are read and processed one batch at a time, so large files can be opened without loading
+them in memory with `anndata.read_h5ad(path, backed="r")`.
+
+On GPU, inference runs in bfloat16 by default, as in the paper's evaluation. Pass
+`autocast_dtype=None` to any predictor method for float32, the default on CPU.
+
+### In-context learning: cell types outside the training vocabulary
+
+CellScribe can identify cell types it was never trained on through in-context learning. The prompt
+lists a few labelled example cells, one line per cell (`"Example cell 1: The cell type is <label>."`),
+each line being conditioned by its own cell, and the model infers the type of the query cell.
+`data/cellscribe/icl_query_sample.csv` holds a kidney loop of Henle thick ascending limb epithelial
+cell, a cell type held out of training. Without examples, CellScribe mistakes it for another segment
+of the nephron, the distal convoluted tubule. `data/cellscribe/icl_examples_sample.csv` holds four
+labelled example cells (first column `cell_type`): two thick ascending limb cells and two cells of
+its closest training type, the thin ascending limb of the loop of Henle.
+
+```python
+query = pd.read_csv("data/cellscribe/icl_query_sample.csv", index_col=0)
+examples = pd.read_csv("data/cellscribe/icl_examples_sample.csv", index_col=0)
+example_labels = examples.pop("cell_type").tolist()
+
+# Without examples: the held-out cell type cannot be predicted
+print(predictor.predict_cell_type(query.values, list(query.columns)))
+# ['kidney distal convoluted tubule epithelial cell']
+
+# With labelled examples (in-context learning)
+print(
+    predictor.predict_cell_type_in_context(
+        query.values, list(query.columns), examples.values, list(examples.columns), example_labels
+    )
+)
+# ['kidney loop of Henle thick ascending limb epithelial cell']
+```
+
+### Using the model directly
+
+To run your own inference loop or to fine-tune CellScribe, one can load the model (a
+`torch.nn.Module`) and its components without the predictor:
+
+```python
+import pandas as pd
+import torch
+
+from multiomics_open_research.cellscribe.pretrained import get_cellscribe_pretrained_model
+from multiomics_open_research.cellscribe.prompts import build_in_context_prompt, build_prompt
+
+model, tokenizer, gene_mapper, preprocessor = get_cellscribe_pretrained_model(device="cuda")
+
+# Raw counts -> encoder inputs
+cells = pd.read_csv("data/cellscribe/cell_typing_sample.csv", index_col=0)
+counts = torch.from_numpy(gene_mapper(cells.values, list(cells.columns))).to("cuda")
+scrnaseq_input = preprocessor(counts)
+
+# Inference: generate the answers
+prompt = build_prompt(tokenizer, task="cell_typing")  # or task="cell_state"
+inputs = tokenizer([prompt] * len(cells), return_tensors="pt").to("cuda")
+generated = model.generate(
+    inputs.input_ids, inputs.attention_mask, scrnaseq_preprocessed_input=scrnaseq_input
+)
+print(tokenizer.batch_decode(generated, skip_special_tokens=True))
+
+# In-context learning: one conditioning vector per prompt token
+query = pd.read_csv("data/cellscribe/icl_query_sample.csv", index_col=0)
+examples = pd.read_csv("data/cellscribe/icl_examples_sample.csv", index_col=0)
+example_labels = examples.pop("cell_type").tolist()
+
+
+def embed(cells: pd.DataFrame) -> torch.Tensor:
+    counts = torch.from_numpy(gene_mapper(cells.values, list(cells.columns))).to("cuda")
+    return model.embed_cells(preprocessor(counts))  # [n_cells, hidden_size]
+
+
+with torch.no_grad():
+    query_vectors, example_vectors = embed(query), embed(examples)
+prompt_ids, spans = build_in_context_prompt(tokenizer, example_labels)
+plan = query_vectors[:, None, :].repeat(1, len(prompt_ids), 1)  # the query cell everywhere,
+for k, (start, end) in enumerate(spans):
+    plan[:, start:end] = example_vectors[k]  # except on each example line
+input_ids = torch.tensor([prompt_ids] * len(query), device="cuda")
+generated = model.generate(
+    input_ids,
+    torch.ones_like(input_ids),
+    conditioning=plan,
+    conditioning_default=query_vectors,  # conditions the generated answer
+)
+print(tokenizer.batch_decode(generated, skip_special_tokens=True))
+
+# Training: teacher-forced loss on the answers (prompt tokens and padding masked out)
+answers = [f"The cell type is {label}.<|im_end|>\n" for label in ["B cell"] * len(cells)]
+tokenizer.padding_side = "right"
+batch = tokenizer([prompt + answer for answer in answers], return_tensors="pt", padding=True).to("cuda")
+labels = batch.input_ids.clone()
+labels[:, : len(tokenizer(prompt).input_ids)] = -100
+labels[batch.attention_mask == 0] = -100
+model.train()
+loss = model(
+    batch.input_ids, batch.attention_mask, scrnaseq_preprocessed_input=scrnaseq_input, labels=labels
+).loss
+loss.backward()
+```
+
 ## Citing our work 📚
 
 If you find this repository useful in your work, please add a citation to our associated papers:
@@ -143,17 +320,33 @@ If you find this repository useful in your work, please add a citation to our as
 }
 ```
 
-[MOJO](https://www.biorxiv.org/content/10.1101/2025.06.25.661237v1):
+[MOJO](https://proceedings.mlr.press/v306/gelard26a.html):
 
 ```bibtex
-@article {G{\'e}lard2025.06.25.661237,
-	author = {G{\'e}lard, Maxence and Benkirane, Hakim and Pierrot, Thomas and Richard, Guillaume and Courn{\`e}de, Paul-Henry},
-	title = {Bimodal masked language modeling for bulk RNA-seq and DNA methylation representation learning},
-	elocation-id = {2025.06.25.661237},
-	year = {2025},
-	doi = {10.1101/2025.06.25.661237},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2025/06/27/2025.06.25.661237},
-	journal = {bioRxiv}
+@InProceedings{pmlr-v306-gelard26a,
+  title =      {Bimodal masked language modeling for bulk {RNA}-seq and {DNA} methylation representation learning},
+  author =       {G\'{e}lard, Maxence and Benkirane, Hakim and Pierrot, Thomas and Richard, Guillaume and Courn\`{e}de, Paul-Henry},
+  booktitle =      {Proceedings of the 43rd International Conference on Machine Learning},
+  pages =      {34463--34495},
+  year =      {2026},
+  editor =      {Zhang, Tong and Dudik, Miroslav and Jaggi, Martin and Agarwal, Alekh and Li, Sharon and Schuurmans, Dale and Zhu, Jerry and Berkenkamp, Felix and Dong, Hanze and Bietti, Alberto},
+  volume =      {306},
+  series =      {Proceedings of Machine Learning Research},
+  month =      {06--11 Jul},
+  publisher =    {PMLR},
+  url =      {https://proceedings.mlr.press/v306/gelard26a.html},
+}
+```
+
+[CellScribe](https://www.biorxiv.org/content/10.64898/2026.10.07.757352):
+
+```bibtex
+@article{gelard2026closed,
+  title={From Closed-Set Annotation to In-Context Discovery: Biologically Grounded LLMs for Cellular Profiling},
+  author={Gelard, Maxence and Benkirane, Hakim and Pierrot, Thomas and Cournede, Paul-Henry and P. de Almeida, Bernardo},
+  journal={bioRxiv},
+  pages={2026--10},
+  year={2026},
+  publisher={Cold Spring Harbor Laboratory}
 }
 ```
