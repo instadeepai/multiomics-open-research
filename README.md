@@ -8,7 +8,7 @@ This repository provides the code and pre-trained weights of three models:
 |---|---|---|---|
 | [1. BulkRNABert](#1-bulkrnabert) ([paper](https://proceedings.mlr.press/v259/gelard25a.html)) | Bulk RNA-seq | Transformer encoder pre-trained with masked language modeling, whose embeddings are used for cancer-type classification and survival prediction. | JAX |
 | [2. MOJO](#2-mojo) ([paper](https://proceedings.mlr.press/v306/gelard26a.html)) | Bulk RNA-seq + DNA methylation | Bimodal model learning joint representations of both modalities for cancer-type classification and survival analysis. | JAX |
-| [3. CellScribe](#3-cellscribe) ([paper](https://www.biorxiv.org/content/10.64898/2026.10.07.757352)) | Single-cell RNA-seq | Language model conditioned on single-cell foundation model embeddings that generates a cell's type and its active malignant meta-programs in natural language. | PyTorch |
+| [3. CellScribe](#3-cellscribe) ([paper](https://www.biorxiv.org/content/10.64898/2026.10.07.757352)) | Single-cell RNA-seq | Language model conditioned on single-cell foundation model embeddings that generates a cell's type and cell states in natural language. | PyTorch |
 
 ### Get started 🚀
 
@@ -159,11 +159,6 @@ meta-program agreement. Beyond these two tasks, CellScribe identifies cell types
 supervised vocabulary through in-context learning: the prompt lists a few labelled example
 cells, each conditioning its own line, and the model infers the type of the query cell.
 
-The CellScribe weights are for non-commercial research use only. They include the unmodified
-scFoundation encoder weights, which remain under the
-[scFoundation Model License](https://github.com/biomap-research/scFoundation/blob/main/MODEL_LICENSE)
-of BioMap (see the `LICENSE.md` of the Hugging Face repository for the full terms).
-
 ## Model
 
 - **Cell encoder**: [scFoundation](https://www.nature.com/articles/s41592-024-02305-7)
@@ -177,27 +172,26 @@ of BioMap (see the `LICENSE.md` of the Hugging Face repository for the full term
   ([Qwen Team, 2024](https://arxiv.org/abs/2412.15115)), prompted with a task-specific system
   prompt and question.
 
-The model was trained on CELLxGENE Census datasets (cell typing) and on the Curated Cancer
-Cell Atlas, 3CA (cell typing and cell state).
+The model was trained on [CELLxGENE Census](https://chanzuckerberg.github.io/cellxgene-census/)
+datasets (cell typing) and on the [Curated Cancer Cell Atlas, 3CA](https://www.weizmann.ac.il/sites/3CA/)
+(cell typing and cell state).
 
 ## Usage
 
-Unlike BulkRNABert and MOJO, CellScribe is implemented in PyTorch; its weights are downloaded
+Unlike BulkRNABert and MOJO, CellScribe is implemented in PyTorch. Its weights are downloaded
 from Hugging Face. The examples below use the example cells of `data/cellscribe` (raw counts
 with gene symbols as columns), all held out of training:
 
-- `cell_typing_sample.csv`: four CELLxGENE immune cells, for cell typing;
+- `cell_typing_sample.csv`: four CELLxGENE immune cells, for cell typing.
 - `cell_state_sample.csv`: four malignant cells from the Curated Cancer Cell Atlas (3CA),
-  for cell state;
-- `icl_query_sample.csv` and `icl_examples_sample.csv`, for in-context learning: a kidney
-  loop of Henle thick ascending limb epithelial cell, a cell type held out of training
-  (without examples, CellScribe mistakes it for another segment of the nephron, the distal
-  convoluted tubule), and four labelled example cells (first column `cell_type`): two thick
-  ascending limb cells and two cells of its closest training type, the thin ascending limb.
+  for cell state.
+- `icl_query_sample.csv` and `icl_examples_sample.csv`, for in-context learning: a query
+  cell of a cell type held out of training, and labelled example cells (first column
+  `cell_type`).
 
 ### Using the model directly
 
-The model is a `torch.nn.Module`, for your own inference loop or to fine-tune it.
+The model is a `torch.nn.Module`, which can be used in a custom inference loop or fine-tuned.
 
 #### Loading
 
@@ -263,14 +257,14 @@ with torch.no_grad():
     query_vectors = model.embed_cells(model.preprocess(query.values, list(query.columns)))
     example_vectors = model.embed_cells(model.preprocess(examples.values, list(examples.columns)))
 prompt_ids, spans = model.build_in_context_prompt(tokenizer, example_labels)
-plan = query_vectors[:, None, :].repeat(1, len(prompt_ids), 1)  # the query cell everywhere,
+plan = query_vectors.expand(len(prompt_ids), -1).clone()  # the query cell on every token,
 for k, (start, end) in enumerate(spans):
-    plan[:, start:end] = example_vectors[k]  # except on each example line
-input_ids = torch.tensor([prompt_ids] * len(query), device=model.device)
+    plan[start:end] = example_vectors[k]  # except the example lines
+input_ids = torch.tensor([prompt_ids], device=model.device)
 generated = model.generate(
     input_ids,
     torch.ones_like(input_ids),
-    conditioning=plan,
+    conditioning=plan[None],  # batch of one query
     conditioning_default=query_vectors,  # conditions the generated answer
 )
 print(tokenizer.batch_decode(generated, skip_special_tokens=True))
@@ -337,9 +331,7 @@ for prediction in predictor.predict_cell_state(cells.values, list(cells.columns)
 ```
 
 An `AnnData` object holding raw counts can be used directly with
-`predictor.predict_anndata(adata, task="cell_typing")` (or `task="cell_state"`). Cells are
-processed one batch at a time, so large files can be opened with
-`anndata.read_h5ad(path, backed="r")`.
+`predictor.predict_anndata(adata, task="cell_typing")` (or `task="cell_state"`).
 
 #### In-context learning
 
@@ -367,10 +359,10 @@ print(
   (CP10k + log1p).
 - **Gene names**: HGNC symbols. For CELLxGENE files, set
   `adata.var_names = adata.var["feature_name"]`.
-- **Genes**: the cell encoder reads a fixed list of 19,264 genes (`gene_list.txt`). Your data
-  rarely measures exactly these genes, so `model.preprocess` maps them onto it: genes of the
-  list that your data does not have are given a count of zero, and genes outside the list
-  are dropped.
+- **Genes**: the cell encoder reads a fixed list of 19,264 genes (`gene_list.txt`). Datasets
+  rarely measure exactly these genes, so `model.preprocess` maps the input genes onto this
+  list: listed genes absent from the input are given a count of zero, and genes outside the
+  list are dropped.
 
 ## Citing our work 📚
 
