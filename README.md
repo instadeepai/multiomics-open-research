@@ -136,146 +136,137 @@ mean_embedding = outs["after_transformer_embedding"].mean(axis=1)
 * 📜 **[Read the Paper (bioRxiv 2026)](https://www.biorxiv.org/content/10.64898/2026.10.07.757352)**
 * 🤗 **[Hugging Face Link](https://huggingface.co/InstaDeepAI/CellScribe)**
 
-CellScribe is a generative framework that describes a cell along two complementary axes in a single
-model: its *identity* (lineage) and its *state* (active transcriptional programs). It conditions a
-pretrained language model ([Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct),
-[Qwen Team, 2024](https://arxiv.org/abs/2412.15115)) on frozen embeddings of a single-cell foundation
-model ([scFoundation](https://www.nature.com/articles/s41592-024-02305-7), Hao et al., 2024) through
-adaptive layer normalization (AdaLN, [Peebles and Xie, 2023](https://arxiv.org/abs/2212.09748)): the
-cell embedding sets the scale and shift of every layer normalization of the language model.
-Depending on the task-specific prompt, the same model generates:
-- **cell typing**: an ontology-grounded cell type (Cell Ontology vocabulary of CELLxGENE), e.g.
-  `"The cell type is B cell."`;
-- **cell state**: a quantified meta-program profile. Meta-programs are the 41 recurrent malignant
-  programs identified across 24 cancer types with the Curated Cancer Cell Atlas (3CA) by
-  [Gavish et al., *Hallmarks of transcriptional intratumour heterogeneity across a thousand tumours*,
-  Nature 2023](https://www.nature.com/articles/s41586-023-06130-4), and grouped into 11 hallmarks.
-  CellScribe lists the active programs with their activity scores and the dominant hallmark, e.g.
-  `"Active programs: Cell Cycle - G2/M (1.9), EMT-II (1.1). Dominant hallmark: Cell cycle."`.
+CellScribe is a generative framework that describes a cell along two complementary axes in a
+single model: its *identity* (lineage) and its *state* (active transcriptional programs). It
+conditions a pretrained language model
+([Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)) on frozen embeddings
+of a single-cell foundation model ([scFoundation](https://www.nature.com/articles/s41592-024-02305-7))
+through adaptive layer normalization (AdaLN): the cell embedding sets the scale and shift of every
+layer normalization of the language model. Depending on the task-specific prompt, the same model
+generates:
 
-The paper also describes reinforcement learning against cell-ontology distance and meta-program
-agreement. Beyond these two tasks, CellScribe identifies cell types outside its supervised
-vocabulary through in-context learning (see below).
+- **Cell typing**: an ontology-grounded cell type (Cell Ontology vocabulary of CELLxGENE).
+  Example: `"The cell type is B cell."`
+- **Cell state**: a quantified meta-program profile. Meta-programs are the 41 recurrent
+  malignant programs identified across 24 cancer types with the Curated Cancer Cell Atlas (3CA)
+  by [Gavish et al., *Hallmarks of transcriptional intratumour heterogeneity across a thousand tumours*, Nature 2023](https://www.nature.com/articles/s41586-023-06130-4), and
+  grouped into 11 hallmarks. CellScribe lists the active programs with their activity scores
+  and the dominant hallmark.
+  Example: `"Active programs: Cell Cycle - G2/M (1.9), EMT-II (1.1). Dominant hallmark: Cell cycle."`
+
+The paper also describes reinforcement learning against cell-ontology distance and
+meta-program agreement. Beyond these two tasks, CellScribe identifies cell types outside its
+supervised vocabulary through in-context learning: the prompt lists a few labelled example
+cells, each conditioning its own line, and the model infers the type of the query cell.
 
 The CellScribe weights are for non-commercial research use only. They include the unmodified
 scFoundation encoder weights, which remain under the
 [scFoundation Model License](https://github.com/biomap-research/scFoundation/blob/main/MODEL_LICENSE)
 of BioMap (see the `LICENSE.md` of the Hugging Face repository for the full terms).
 
-Unlike BulkRNABert and MOJO, CellScribe is implemented in PyTorch. Inputs are raw UMI counts
-(not normalised) with HGNC gene symbols as gene names. Genes missing from the input are set to
-zero. We provide in `data/cellscribe` two samples of held-out cells: CELLxGENE cells for cell typing
-and malignant cells from the Curated Cancer Cell Atlas (3CA) for cell state. To predict their cell
-type and cell state, one can use the following code snippet:
+## Model
 
-```python
-import pandas as pd
+- **Cell encoder**: [scFoundation](https://www.nature.com/articles/s41592-024-02305-7)
+  (Hao et al., 2024). The encoder embeds the cell's raw counts over 19,264 genes.
+- **Conditioning**: a linear projection followed by a layer normalization turns the embedding
+  into a conditioning vector. Through adaptive layer normalization (AdaLN,
+  [Peebles and Xie, 2023](https://arxiv.org/abs/2212.09748)), that vector sets the scale and
+  shift of every layer normalization of the language model. The AdaLN projections are
+  initialised to zero (AdaLN-Zero), so training starts from the unmodified language model.
+- **Language model**: [Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
+  ([Qwen Team, 2024](https://arxiv.org/abs/2412.15115)), prompted with a task-specific system
+  prompt and question.
 
-from multiomics_open_research.cellscribe.pretrained import get_cellscribe_predictor
+The model was trained on CELLxGENE Census datasets (cell typing) and on the Curated Cancer
+Cell Atlas, 3CA (cell typing and cell state).
 
-# Get pretrained CellScribe predictor
-predictor = get_cellscribe_predictor(device="cuda")  # or "cpu"
+## Usage
 
-# Cell typing
-cells = pd.read_csv("data/cellscribe/cell_typing_sample.csv", index_col=0)
-cell_types = predictor.predict_cell_type(cells.values, list(cells.columns))
-print(cell_types)
-# ['CD4-positive, alpha-beta cytotoxic T cell', 'immature B cell',
-#  'CD16-negative, CD56-bright natural killer cell, human', 'CD14-low, CD16-positive monocyte']
+Unlike BulkRNABert and MOJO, CellScribe is implemented in PyTorch; its weights are downloaded
+from Hugging Face. The examples below use the example cells of `data/cellscribe` (raw counts
+with gene symbols as columns), all held out of training:
 
-# Cell state
-cells = pd.read_csv("data/cellscribe/cell_state_sample.csv", index_col=0)
-for prediction in predictor.predict_cell_state(cells.values, list(cells.columns)):
-    print(prediction.programs, prediction.hallmark)
-# [('Stress (in vitro)', 0.9), ('Stress', 0.8), ('Translation initiation', 0.7), ('MYC-targets', 0.6)] Stress or hypoxia
-# [('Unfolded protein response', 1.1), ('immunoglobulins (IGs)', 1.0), ('Protein maturation', 0.8), ('Interferon/MHC-II (I)', 0.8), ('Stress', 0.7)] Protein regulation
-# [('Cell Cycle - G1/S', 1.8), ('Cell Cycle - G2/M', 1.7), ('Cell cycle (HMG-rich)', 1.4), ('MYC-targets', 0.9), ('EMT-II', 0.8)] Cell cycle
-# [('MYC-targets', 1.0), ('Cell Cycle - G2/M', 0.9), ('Cell cycle (HMG-rich)', 0.7), ('Respiration', 0.6)] Oncogenic
-```
-
-An `AnnData` object holding raw counts can be used directly with
-`predictor.predict_anndata(adata, task="cell_typing")` (or `task="cell_state"`). For CELLxGENE files,
-first set `adata.var_names = adata.var["feature_name"]` so that genes are named by their symbols.
-Cells are read and processed one batch at a time, so large files can be opened without loading
-them in memory with `anndata.read_h5ad(path, backed="r")`.
-
-On GPU, inference runs in bfloat16 by default, as in the paper's evaluation. Pass
-`autocast_dtype=None` to any predictor method for float32, the default on CPU.
-
-### In-context learning: cell types outside the training vocabulary
-
-CellScribe can identify cell types it was never trained on through in-context learning. The prompt
-lists a few labelled example cells, one line per cell (`"Example cell 1: The cell type is <label>."`),
-each line being conditioned by its own cell, and the model infers the type of the query cell.
-`data/cellscribe/icl_query_sample.csv` holds a kidney loop of Henle thick ascending limb epithelial
-cell, a cell type held out of training. Without examples, CellScribe mistakes it for another segment
-of the nephron, the distal convoluted tubule. `data/cellscribe/icl_examples_sample.csv` holds four
-labelled example cells (first column `cell_type`): two thick ascending limb cells and two cells of
-its closest training type, the thin ascending limb of the loop of Henle.
-
-```python
-query = pd.read_csv("data/cellscribe/icl_query_sample.csv", index_col=0)
-examples = pd.read_csv("data/cellscribe/icl_examples_sample.csv", index_col=0)
-example_labels = examples.pop("cell_type").tolist()
-
-# Without examples: the held-out cell type cannot be predicted
-print(predictor.predict_cell_type(query.values, list(query.columns)))
-# ['kidney distal convoluted tubule epithelial cell']
-
-# With labelled examples (in-context learning)
-print(
-    predictor.predict_cell_type_in_context(
-        query.values, list(query.columns), examples.values, list(examples.columns), example_labels
-    )
-)
-# ['kidney loop of Henle thick ascending limb epithelial cell']
-```
+- `cell_typing_sample.csv`: four CELLxGENE immune cells, for cell typing;
+- `cell_state_sample.csv`: four malignant cells from the Curated Cancer Cell Atlas (3CA),
+  for cell state;
+- `icl_query_sample.csv` and `icl_examples_sample.csv`, for in-context learning: a kidney
+  loop of Henle thick ascending limb epithelial cell, a cell type held out of training
+  (without examples, CellScribe mistakes it for another segment of the nephron, the distal
+  convoluted tubule), and four labelled example cells (first column `cell_type`): two thick
+  ascending limb cells and two cells of its closest training type, the thin ascending limb.
 
 ### Using the model directly
 
-To run your own inference loop or to fine-tune CellScribe, one can load the model (a
-`torch.nn.Module`) and its components without the predictor:
+The model is a `torch.nn.Module`, for your own inference loop or to fine-tune it.
+
+#### Loading
 
 ```python
 import pandas as pd
 import torch
 
 from multiomics_open_research.cellscribe.pretrained import get_cellscribe_pretrained_model
-from multiomics_open_research.cellscribe.prompts import build_in_context_prompt, build_prompt
 
-model, tokenizer, gene_mapper, preprocessor = get_cellscribe_pretrained_model(device="cuda")
+model, tokenizer = get_cellscribe_pretrained_model(device="cuda")  # or "cpu"
 
-# Raw counts -> encoder inputs
-cells = pd.read_csv("data/cellscribe/cell_typing_sample.csv", index_col=0)
-counts = torch.from_numpy(gene_mapper(cells.values, list(cells.columns))).to("cuda")
-scrnaseq_input = preprocessor(counts)
 
-# Inference: generate the answers
-prompt = build_prompt(tokenizer, task="cell_typing")  # or task="cell_state"
-inputs = tokenizer([prompt] * len(cells), return_tensors="pt").to("cuda")
+def load_example(name: str) -> pd.DataFrame:
+    return pd.read_csv(f"data/cellscribe/{name}.csv", index_col=0)
+```
+
+#### Cell typing
+
+```python
+cells = load_example("cell_typing_sample")
+scrnaseq_input = model.preprocess(cells.values, list(cells.columns))  # raw counts -> encoder inputs
+prompt = model.build_prompt(tokenizer, task="cell_typing")
+inputs = tokenizer([prompt] * len(cells), return_tensors="pt").to(model.device)
 generated = model.generate(
     inputs.input_ids, inputs.attention_mask, scrnaseq_preprocessed_input=scrnaseq_input
 )
-print(tokenizer.batch_decode(generated, skip_special_tokens=True))
+answers = tokenizer.batch_decode(generated, skip_special_tokens=True)
+print([model.parse_cell_type(answer) for answer in answers])
+# ['CD4-positive, alpha-beta cytotoxic T cell', 'immature B cell',
+#  'CD16-negative, CD56-bright natural killer cell, human', 'CD14-low, CD16-positive monocyte']
+```
 
-# In-context learning: one conditioning vector per prompt token
-query = pd.read_csv("data/cellscribe/icl_query_sample.csv", index_col=0)
-examples = pd.read_csv("data/cellscribe/icl_examples_sample.csv", index_col=0)
+#### Cell state
+
+```python
+cells = load_example("cell_state_sample")
+scrnaseq_input = model.preprocess(cells.values, list(cells.columns))
+prompt = model.build_prompt(tokenizer, task="cell_state")
+inputs = tokenizer([prompt] * len(cells), return_tensors="pt").to(model.device)
+generated = model.generate(
+    inputs.input_ids, inputs.attention_mask, scrnaseq_preprocessed_input=scrnaseq_input
+)
+for answer in tokenizer.batch_decode(generated, skip_special_tokens=True):
+    programs, hallmark = model.parse_cell_state(answer)
+    print(programs, hallmark)
+# [('Stress (in vitro)', 0.9), ('Stress', 0.8), ('Translation initiation', 0.7), ('MYC-targets', 0.6)] Stress or hypoxia
+# [('Unfolded protein response', 1.1), ('immunoglobulins (IGs)', 1.0), ('Protein maturation', 0.8), ('Interferon/MHC-II (I)', 0.8), ('Stress', 0.7)] Protein regulation
+# [('Cell Cycle - G1/S', 1.8), ('Cell Cycle - G2/M', 1.7), ('Cell cycle (HMG-rich)', 1.4), ('MYC-targets', 0.9), ('EMT-II', 0.8)] Cell cycle
+# [('MYC-targets', 1.0), ('Cell Cycle - G2/M', 0.9), ('Cell cycle (HMG-rich)', 0.7), ('Respiration', 0.6)] Oncogenic
+```
+
+#### In-context learning
+
+Each example line of the prompt is conditioned by its own cell, the rest of the prompt and
+the answer by the query cell.
+
+```python
+query = load_example("icl_query_sample")
+examples = load_example("icl_examples_sample")
 example_labels = examples.pop("cell_type").tolist()
 
-
-def embed(cells: pd.DataFrame) -> torch.Tensor:
-    counts = torch.from_numpy(gene_mapper(cells.values, list(cells.columns))).to("cuda")
-    return model.embed_cells(preprocessor(counts))  # [n_cells, hidden_size]
-
-
 with torch.no_grad():
-    query_vectors, example_vectors = embed(query), embed(examples)
-prompt_ids, spans = build_in_context_prompt(tokenizer, example_labels)
+    query_vectors = model.embed_cells(model.preprocess(query.values, list(query.columns)))
+    example_vectors = model.embed_cells(model.preprocess(examples.values, list(examples.columns)))
+prompt_ids, spans = model.build_in_context_prompt(tokenizer, example_labels)
 plan = query_vectors[:, None, :].repeat(1, len(prompt_ids), 1)  # the query cell everywhere,
 for k, (start, end) in enumerate(spans):
     plan[:, start:end] = example_vectors[k]  # except on each example line
-input_ids = torch.tensor([prompt_ids] * len(query), device="cuda")
+input_ids = torch.tensor([prompt_ids] * len(query), device=model.device)
 generated = model.generate(
     input_ids,
     torch.ones_like(input_ids),
@@ -283,11 +274,27 @@ generated = model.generate(
     conditioning_default=query_vectors,  # conditions the generated answer
 )
 print(tokenizer.batch_decode(generated, skip_special_tokens=True))
+# ['The cell type is kidney loop of Henle thick ascending limb epithelial cell.']
+```
 
-# Training: teacher-forced loss on the answers (prompt tokens and padding masked out)
-answers = [f"The cell type is {label}.<|im_end|>\n" for label in ["B cell"] * len(cells)]
+#### Training
+
+A teacher-forced loss on the answers (prompt tokens and padding masked out):
+
+```python
+cells = load_example("cell_typing_sample")
+cell_types = [
+    "CD4-positive, alpha-beta cytotoxic T cell",
+    "immature B cell",
+    "CD16-negative, CD56-bright natural killer cell, human",
+    "CD14-low, CD16-positive monocyte",
+]
+scrnaseq_input = model.preprocess(cells.values, list(cells.columns))
+prompt = model.build_prompt(tokenizer, task="cell_typing")
+answers = [f"The cell type is {cell_type}.<|im_end|>\n" for cell_type in cell_types]
 tokenizer.padding_side = "right"
-batch = tokenizer([prompt + answer for answer in answers], return_tensors="pt", padding=True).to("cuda")
+batch = tokenizer([prompt + answer for answer in answers], return_tensors="pt", padding=True)
+batch = batch.to(model.device)
 labels = batch.input_ids.clone()
 labels[:, : len(tokenizer(prompt).input_ids)] = -100
 labels[batch.attention_mask == 0] = -100
@@ -297,6 +304,73 @@ loss = model(
 ).loss
 loss.backward()
 ```
+
+### Using CellScribePredictor
+
+`CellScribePredictor` wraps the model, tokenizer and preprocessing: raw counts in, parsed
+answers out. On GPU it runs in bfloat16 by default, as in the paper's evaluation (pass
+`autocast_dtype=None` to any method for float32).
+
+```python
+predictor = model.predictor(tokenizer)  # model and tokenizer loaded as above
+```
+
+#### Cell typing
+
+```python
+cells = load_example("cell_typing_sample")
+print(predictor.predict_cell_type(cells.values, list(cells.columns)))
+# ['CD4-positive, alpha-beta cytotoxic T cell', 'immature B cell',
+#  'CD16-negative, CD56-bright natural killer cell, human', 'CD14-low, CD16-positive monocyte']
+```
+
+#### Cell state
+
+```python
+cells = load_example("cell_state_sample")
+for prediction in predictor.predict_cell_state(cells.values, list(cells.columns)):
+    print(prediction.programs, prediction.hallmark)
+# [('Stress (in vitro)', 0.9), ('Stress', 0.8), ('Translation initiation', 0.7), ('MYC-targets', 0.6)] Stress or hypoxia
+# [('Unfolded protein response', 1.1), ('immunoglobulins (IGs)', 1.0), ('Protein maturation', 0.8), ('Interferon/MHC-II (I)', 0.8), ('Stress', 0.7)] Protein regulation
+# [('Cell Cycle - G1/S', 1.8), ('Cell Cycle - G2/M', 1.7), ('Cell cycle (HMG-rich)', 1.4), ('MYC-targets', 0.9), ('EMT-II', 0.8)] Cell cycle
+# [('MYC-targets', 1.0), ('Cell Cycle - G2/M', 0.9), ('Cell cycle (HMG-rich)', 0.7), ('Respiration', 0.6)] Oncogenic
+```
+
+An `AnnData` object holding raw counts can be used directly with
+`predictor.predict_anndata(adata, task="cell_typing")` (or `task="cell_state"`). Cells are
+processed one batch at a time, so large files can be opened with
+`anndata.read_h5ad(path, backed="r")`.
+
+#### In-context learning
+
+```python
+query = load_example("icl_query_sample")
+examples = load_example("icl_examples_sample")
+example_labels = examples.pop("cell_type").tolist()
+
+# Without examples: the held-out cell type cannot be predicted
+print(predictor.predict_cell_type(query.values, list(query.columns)))
+# ['kidney distal convoluted tubule epithelial cell']
+
+# With labelled examples
+print(
+    predictor.predict_cell_type_in_context(
+        query.values, list(query.columns), examples.values, list(examples.columns), example_labels
+    )
+)
+# ['kidney loop of Henle thick ascending limb epithelial cell']
+```
+
+## Input
+
+- **Counts**: raw UMI counts, not normalised values. The model applies its own normalisation
+  (CP10k + log1p).
+- **Gene names**: HGNC symbols. For CELLxGENE files, set
+  `adata.var_names = adata.var["feature_name"]`.
+- **Genes**: the cell encoder reads a fixed list of 19,264 genes (`gene_list.txt`). Your data
+  rarely measures exactly these genes, so `model.preprocess` maps them onto it: genes of the
+  list that your data does not have are given a count of zero, and genes outside the list
+  are dropped.
 
 ## Citing our work 📚
 

@@ -20,10 +20,6 @@ from transformers import PreTrainedTokenizerBase
 
 from multiomics_open_research.cellscribe.inference import CellScribePredictor
 from multiomics_open_research.cellscribe.modeling_cellscribe import CellScribe
-from multiomics_open_research.cellscribe.preprocessing import (
-    GeneMapper,
-    ScFoundationPreprocessor,
-)
 
 ENV_XDG_CACHE_HOME = "XDG_CACHE_HOME"
 DEFAULT_CACHE_DIR = "~/.cache"
@@ -72,29 +68,28 @@ def get_cellscribe_predictor(
 
 def get_cellscribe_pretrained_model(
     device: Union[str, torch.device] = "cpu",
-) -> tuple[CellScribe, PreTrainedTokenizerBase, GeneMapper, ScFoundationPreprocessor]:
+) -> tuple[CellScribe, PreTrainedTokenizerBase]:
     """
-    Pretrained CellScribe model and the components needed to feed it, without the
-    high-level wrapper (e.g. for custom inference or fine-tuning).
+    Pretrained CellScribe model and its tokenizer, without the high-level
+    predictor (e.g. for custom inference or fine-tuning).
 
     Args:
-        device: Device to put the model and preprocessor on, e.g. "cuda".
+        device: Device to put the model on, e.g. "cuda".
 
     Returns:
-        model: ``torch.nn.Module`` (in eval mode). ``model(input_ids,
-            attention_mask, scrnaseq_preprocessed_input=..., labels=...)`` returns
-            the language-model outputs (logits, and the loss when ``labels`` is
-            given); ``model.generate(...)`` returns the generated tokens.
+        model: ``torch.nn.Module`` (in eval mode). ``model.preprocess(counts,
+            gene_names)`` turns raw counts into the encoder inputs;
+            ``model(input_ids, attention_mask, scrnaseq_preprocessed_input=...,
+            labels=...)`` returns the language-model outputs (logits, and the loss
+            when ``labels`` is given); ``model.generate(...)`` returns the
+            generated tokens; ``model.predictor(tokenizer)`` gives the high-level
+            predictor.
         tokenizer: Tokenizer of the language model (left padding).
-        gene_mapper: Maps a ``(cells x genes)`` count matrix and its gene symbols
-            onto the model's gene list.
-        preprocessor: Turns mapped counts into the encoder inputs
-            (``scrnaseq_preprocessed_input``).
     """
-    predictor = get_cellscribe_predictor(device=device)
-    return (
-        predictor.model,
-        predictor.tokenizer,
-        predictor.mapper,
-        predictor.preprocessor,
-    )
+    from transformers import AutoTokenizer
+
+    path = download_cellscribe_ckpt()
+    model = CellScribe.from_pretrained(path, device=device)
+    tokenizer = AutoTokenizer.from_pretrained(path)
+    tokenizer.padding_side = "left"
+    return model, tokenizer

@@ -22,7 +22,7 @@ prompt -> Qwen2.5-0.5B-Instruct whose layer norms are modulated by the
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Sequence, Union
 
 import torch
 import torch.nn as nn
@@ -31,6 +31,21 @@ import transformers
 from multiomics_open_research.cellscribe.ada_ln_zero import (
     attach_ada_ln_zero,
     create_conditional_model_class,
+)
+from multiomics_open_research.cellscribe.postprocessing import (
+    extract_predicted_cell_type,
+    parse_cell_state_prediction,
+)
+from multiomics_open_research.cellscribe.preprocessing import (
+    CELL_TYPES_NAME,
+    GENE_LIST_NAME,
+    GeneMapper,
+    ScFoundationPreprocessor,
+    load_gene_list,
+)
+from multiomics_open_research.cellscribe.prompts import (
+    build_in_context_prompt,
+    build_prompt,
 )
 from multiomics_open_research.cellscribe.scfoundation import SCFoundationWrapper
 
@@ -81,6 +96,79 @@ class CellScribe(nn.Module):
         base_llm_class = getattr(transformers, llm_config.architectures[0])
         conditional_llm = create_conditional_model_class(base_llm_class)(llm_config)
         self.llm = attach_ada_ln_zero(conditional_llm, text_embedding_dim)
+
+        # Set by from_pretrained (files next to the weights).
+        self.gene_list: Optional[list[str]] = None
+        self.cell_types: Optional[list[str]] = None
+        # Input helpers, kept out of the module tree (and of the state dict).
+        self._input_helpers: dict = {}
+
+    @property
+    def device(self) -> torch.device:
+        return next(self.parameters()).device
+
+    # ------------------------------------------------------------ inputs
+
+    def preprocess(self, counts, gene_names: Sequence[str]) -> dict:
+        """Raw counts ``(cells x genes)`` named by gene symbols -> the
+        ``scrnaseq_preprocessed_input`` of :meth:`forward` / :meth:`generate`.
+
+        Genes are mapped onto the model's gene list (``gene_list.txt``): listed
+        genes absent from the input are set to zero, other genes are ignored.
+        """
+        if self.gene_list is None:
+            raise ValueError("load the model with from_pretrained (gene list)")
+        if not self._input_helpers:
+            cfg = self.config.scfoundation
+            self._input_helpers["mapper"] = GeneMapper(self.gene_list)
+            self._input_helpers["preprocessor"] = ScFoundationPreprocessor(
+                num_genes=len(self.gene_list) + 2,  # + 2 sequencing-depth tokens
+                pad_token_id=cfg["pad_token_id"],
+                target_res_str=cfg["tgthighres"],
+            )
+        preprocessor = self._input_helpers["preprocessor"].to(self.device)
+        mapped = torch.from_numpy(self._input_helpers["mapper"](counts, gene_names))
+        return preprocessor(mapped.to(self.device))
+
+    @staticmethod
+    def build_prompt(tokenizer, task: str) -> str:
+        """Chat prompt of a task: ``"cell_typing"`` or ``"cell_state"``."""
+        return build_prompt(tokenizer, task)
+
+    @staticmethod
+    def build_in_context_prompt(tokenizer, example_labels: Sequence[str]):
+        """In-context prompt token ids and the token span of each example line."""
+        return build_in_context_prompt(tokenizer, example_labels)
+
+    # ------------------------------------------------------------ outputs
+
+    def parse_cell_type(self, text: str) -> str:
+        """Cell type of a generated cell-typing answer, read against the training
+        vocabulary (``cell_types.txt``), as in the paper's evaluation."""
+        return extract_predicted_cell_type(text, self.cell_types)
+
+    @staticmethod
+    def parse_cell_state(text: str):
+        """``(programs, hallmark)`` of a generated cell-state answer: the
+        ``(meta-program, score)`` pairs, strongest first, and the dominant
+        hallmark."""
+        return parse_cell_state_prediction(text)
+
+    def predictor(self, tokenizer):
+        """High-level :class:`CellScribePredictor`: raw counts in, parsed cell
+        types / cell states out. Puts the model in eval mode."""
+        from multiomics_open_research.cellscribe.inference import CellScribePredictor
+
+        if self.gene_list is None:
+            raise ValueError("load the model with from_pretrained (gene list)")
+        return CellScribePredictor(
+            model=self.eval(),
+            tokenizer=tokenizer,
+            gene_list=self.gene_list,
+            cell_types=self.cell_types,
+        )
+
+    # ------------------------------------------------------------ model
 
     def _transform_conditioning(self, embeddings: torch.Tensor) -> torch.Tensor:
         return self.conditioning_norm(self.scrna_projector(embeddings))
@@ -186,6 +274,9 @@ class CellScribe(nn.Module):
         if unexpected or set(missing) - {"llm.lm_head.weight"}:
             raise RuntimeError(f"missing={missing} unexpected={unexpected}")
         model.llm.tie_weights()
+        model.gene_list = load_gene_list(path / GENE_LIST_NAME)
+        if (path / CELL_TYPES_NAME).is_file():
+            model.cell_types = load_gene_list(path / CELL_TYPES_NAME)
         return model.to(device).eval()
 
 
