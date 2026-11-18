@@ -32,10 +32,10 @@ setup(
         "jupyter",
         "huggingface-hub>=0.30.0",
         "matplotlib==3.10.9",
-        # CellScribe (PyTorch). transformers is pinned: CellScribe's layer-norm
-        # conditioning relies on this version's Qwen2 decoder-layer interface.
-        "torch>=2.2",
-        "transformers==4.51.0",
+        # CellScribe (PyTorch). transformers 5.3.0 does not tie CellScribe's
+        # output embeddings.
+        "torch>=2.6",
+        "transformers>=4.51,!=5.3.0",
         "safetensors",
     ],
     dependency_links=[

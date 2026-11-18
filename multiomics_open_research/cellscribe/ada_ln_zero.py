@@ -32,10 +32,14 @@ class AdaLNZero(nn.Module):
         self.ada_proj = nn.Linear(conditioning_dim, 2 * hidden_size)
         nn.init.constant_(self.ada_proj.weight, 0)
         nn.init.constant_(self.ada_proj.bias, 0)
+        # Set by the decoder layer for the duration of its forward pass.
+        self.conditioning_signal: Optional[torch.Tensor] = None
 
     def forward(
         self, x: torch.Tensor, conditioning_signal: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
+        if conditioning_signal is None:
+            conditioning_signal = self.conditioning_signal
         if conditioning_signal is None:
             return self.norm(x)
 
@@ -54,22 +58,18 @@ class AdaLNZero(nn.Module):
         return (normed * (1 + scale) + shift).to(input_dtype)
 
 
-def _conditioned_forward(self, hidden_states, conditioning_signal=None, **kwargs):
-    residual = hidden_states
-    hidden_states = self.input_layernorm(
-        hidden_states, conditioning_signal=conditioning_signal
-    )
-    attn_outputs = self.self_attn(hidden_states, **kwargs)
-    hidden_states = residual + attn_outputs[0]
-
-    residual = hidden_states
-    hidden_states = self.post_attention_layernorm(
-        hidden_states, conditioning_signal=conditioning_signal
-    )
-    hidden_states = self.mlp(hidden_states)
-    hidden_states = residual + hidden_states
-
-    return (hidden_states,) + attn_outputs[1:]
+def _conditioned_forward(
+    self, hidden_states, *args, conditioning_signal=None, **kwargs
+):
+    """The decoder layer's own forward pass, with both norms conditioned."""
+    norms = (self.input_layernorm, self.post_attention_layernorm)
+    for norm in norms:
+        norm.conditioning_signal = conditioning_signal
+    try:
+        return type(self).forward(self, hidden_states, *args, **kwargs)
+    finally:
+        for norm in norms:
+            norm.conditioning_signal = None
 
 
 def attach_ada_ln_zero(llm: PreTrainedModel, conditioning_dim: int) -> PreTrainedModel:

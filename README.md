@@ -302,8 +302,8 @@ loss.backward()
 ### Using CellScribePredictor
 
 `CellScribePredictor` wraps the model, tokenizer and preprocessing: raw counts in, parsed
-answers out. On GPU it runs in bfloat16 by default, as in the paper's evaluation (pass
-`autocast_dtype=None` to any method for float32).
+answers out. It runs in float32 by default (pass `autocast_dtype="auto"` to any method for
+bfloat16 on GPU, as in the paper's evaluation).
 
 ```python
 predictor = model.predictor(tokenizer)  # model and tokenizer loaded as above

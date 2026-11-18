@@ -41,7 +41,7 @@ from multiomics_open_research.cellscribe.prompts import (
     build_prompt,
 )
 
-# Mixed precision of the predictor: "auto", None (fp32) or a torch dtype.
+# Mixed precision of the predictor: None (fp32), "auto" or a torch dtype.
 AutocastDtype = Union[str, torch.dtype, None]
 
 
@@ -132,16 +132,16 @@ class CellScribePredictor:
         gene_names: Sequence[str],
         task: str = TASK_CELL_TYPING,
         batch_size: int = 32,
-        autocast_dtype: AutocastDtype = "auto",
+        autocast_dtype: AutocastDtype = None,
     ) -> list[str]:
         """Generated answer for each cell.
 
         Args:
             counts: ``(n_cells, n_genes)`` raw UMI counts (numpy or scipy sparse).
             gene_names: HGNC symbols of the columns.
-            autocast_dtype: mixed precision. ``"auto"`` (default): bfloat16 on GPU,
-                as in the paper's evaluation, and fp32 on CPU; ``None``: fp32;
-                or a dtype such as ``torch.float16``.
+            autocast_dtype: mixed precision. ``None`` (default): fp32;
+                ``"auto"``: bfloat16 on GPU, as in the paper's evaluation, and fp32
+                on CPU; or a dtype such as ``torch.bfloat16``.
 
         The scFoundation pooling runs over the padded batch, so a cell's embedding
         depends slightly on its batch-mates; results are reproducible for a
@@ -191,7 +191,7 @@ class CellScribePredictor:
         counts,
         gene_names: Sequence[str],
         batch_size: int = 32,
-        autocast_dtype: AutocastDtype = "auto",
+        autocast_dtype: AutocastDtype = None,
     ) -> torch.Tensor:
         """Conditioning vector of each cell, ``[n_cells, hidden_size]``."""
         if len(gene_names) != counts.shape[1]:
@@ -214,7 +214,7 @@ class CellScribePredictor:
         example_gene_names: Sequence[str],
         example_labels: Sequence[str],
         batch_size: int = 32,
-        autocast_dtype: AutocastDtype = "auto",
+        autocast_dtype: AutocastDtype = None,
     ) -> list[str]:
         """Generated cell-typing answer for each cell, given labelled example cells.
 

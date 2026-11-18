@@ -37,7 +37,6 @@ class AutoDiscretizationEmbedding2(nn.Module):
         self.emb_mask = nn.Embedding(1, self.dim)
         self.emb_pad = nn.Embedding(1, self.dim)
 
-        self.bin_num_idx = torch.tensor(range(self.bin_num))
         self.mask_token_id = mask_token_id
         self.pad_token_id = pad_token_id
 
@@ -51,7 +50,7 @@ class AutoDiscretizationEmbedding2(nn.Module):
         x = self.bin_alpha * x + x_crosslayer
         weight = self.Softmax(x)
 
-        token_emb = self.emb(self.bin_num_idx.to(x.device))  # [H, D]
+        token_emb = self.emb(torch.arange(self.bin_num, device=x.device))  # [H, D]
         x = torch.matmul(weight, token_emb)  # [B, N, D]
 
         tensor0 = torch.tensor(0, dtype=torch.long, device=x.device)
