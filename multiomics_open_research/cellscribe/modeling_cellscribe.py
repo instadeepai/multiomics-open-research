@@ -20,7 +20,7 @@ prompt -> Qwen2.5-0.5B-Instruct whose layer norms are modulated by the
 """
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
@@ -66,7 +66,10 @@ class CellScribeConfig:
 
     @classmethod
     def load(cls, path: Union[str, Path]) -> "CellScribeConfig":
-        return cls(**json.loads(Path(path).read_text()))
+        """Keys of the Hugging Face loader (``architectures``, ``auto_map``) are
+        ignored."""
+        config = json.loads(Path(path).read_text())
+        return cls(**{f.name: config[f.name] for f in fields(cls) if f.name in config})
 
 
 class LinearHead(nn.Module):
