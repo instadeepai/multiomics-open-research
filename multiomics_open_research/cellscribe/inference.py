@@ -88,7 +88,7 @@ class CellScribePredictor:
 
         path = resolve_path(path)
         model = CellScribe.from_pretrained(path, device=device)
-        tokenizer = AutoTokenizer.from_pretrained(str(path))
+        tokenizer = AutoTokenizer.from_pretrained(str(path), trust_remote_code=False)
         cell_types = (
             load_gene_list(path / CELL_TYPES_NAME)
             if (path / CELL_TYPES_NAME).is_file()

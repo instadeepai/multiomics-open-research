@@ -90,6 +90,8 @@ def get_cellscribe_pretrained_model(
 
     path = download_cellscribe_ckpt()
     model = CellScribe.from_pretrained(path, device=device)
-    tokenizer = AutoTokenizer.from_pretrained(path)
+    # config.json names the Hugging Face remote code, which is not needed here
+    # (transformers 5 would ask whether to trust it).
+    tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=False)
     tokenizer.padding_side = "left"
     return model, tokenizer
