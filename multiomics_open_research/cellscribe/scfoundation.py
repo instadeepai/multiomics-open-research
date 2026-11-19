@@ -2,8 +2,8 @@
 #
 # Adapted from scFoundation (https://github.com/biomap-research/scFoundation),
 # licensed under the Apache License, Version 2.0
-# (http://www.apache.org/licenses/LICENSE-2.0). Modified by InstaDeep Ltd (2026):
-# only the encoder half of the "cell" model is kept.
+# (http://www.apache.org/licenses/LICENSE-2.0). Modified by InstaDeep Ltd and
+# CentraleSupélec (2026): only the encoder half of the "cell" model is kept.
 #
 # The scFoundation model weights are NOT covered by the Apache License: they are
 # distributed under the scFoundation Model License (non-commercial research only),

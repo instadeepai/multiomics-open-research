@@ -416,3 +416,15 @@ If you find this repository useful in your work, please add a citation to our as
   publisher={Cold Spring Harbor Laboratory}
 }
 ```
+
+## License 📜
+
+The code and model weights in this repository are released by InstaDeep Ltd and
+CentraleSupélec under the [Apache License 2.0](LICENSE.md). The sample data in `data/` are
+from [TCGA](https://portal.gdc.cancer.gov/) (GDC), [CELLxGENE](https://cellxgene.cziscience.com/)
+and the [Curated Cancer Cell Atlas (3CA)](https://www.weizmann.ac.il/sites/3CA/) and remain under
+their sources' terms. The CellScribe weights, downloaded from
+[Hugging Face](https://huggingface.co/InstaDeepAI/CellScribe), include the scFoundation encoder
+weights, which remain under the
+[scFoundation Model License](https://github.com/biomap-research/scFoundation/blob/main/MODEL_LICENSE)
+(non-commercial research use only).
