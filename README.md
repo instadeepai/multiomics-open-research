@@ -69,8 +69,8 @@ Supported model names are:
 ### Dataset preprocessing
 
 TCGA dataset has been obtained through the [GDC portal](https://portal.gdc.cancer.gov/).
-A sample of raw RNA-seq data is provided in the folder `data/raw_tcga_sample/` as downloaded from the portal. We also provide the preprocessing script (`scripts/preprocess_tcga_rna_seq.py`) that allows you to generate
-the preprocessed `data/bulkrnabert/tcga_sample.csv` file. This script uses the set of genes use by `BulkRNABert` that is provided in `data/common_gene_id.txt`.
+A sample of raw RNA-seq data is provided in the folder `data/bulkrnabert/tcga_sample_gdc/` as downloaded from the portal. We also provide the preprocessing script (`scripts/preprocess_tcga_rna_seq.py`) that turns it into a preprocessed file,
+written as `tcga_sample_gdc_preprocessed.csv` in the output folder. This script uses the set of genes used by `BulkRNABert` that is provided in `data/bulkrnabert/common_gene_id.txt`.
 To run the preprocessing, one can use:
 
 
@@ -165,11 +165,11 @@ cells, each conditioning its own line, and the model infers the type of the quer
   (Hao et al., 2024). The encoder embeds the cell's raw counts over 19,264 genes.
 - **Conditioning**: a linear projection followed by a layer normalization turns the embedding
   into a conditioning vector. Through adaptive layer normalization (AdaLN,
-  [Peebles and Xie, 2023](https://arxiv.org/abs/2212.09748)), that vector sets the scale and
+  [Peebles and Xie, 2023](https://openaccess.thecvf.com/content/ICCV2023/html/Peebles_Scalable_Diffusion_Models_with_Transformers_ICCV_2023_paper.html)), that vector sets the scale and
   shift of every layer normalization of the language model. The AdaLN projections are
   initialised to zero (AdaLN-Zero), so training starts from the unmodified language model.
 - **Language model**: [Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)
-  ([Qwen Team, 2024](https://arxiv.org/abs/2412.15115)), prompted with a task-specific system
+  ([Qwen Team, 2024](https://qwenlm.github.io/blog/qwen2.5/)), prompted with a task-specific system
   prompt and question.
 
 The model was trained on [CELLxGENE Census](https://chanzuckerberg.github.io/cellxgene-census/)
@@ -400,6 +400,7 @@ If you find this repository useful in your work, please add a citation to our as
   series =      {Proceedings of Machine Learning Research},
   month =      {06--11 Jul},
   publisher =    {PMLR},
+  pdf =      {https://raw.githubusercontent.com/mlresearch/v306/main/assets/gelard26a/gelard26a.pdf},
   url =      {https://proceedings.mlr.press/v306/gelard26a.html},
 }
 ```

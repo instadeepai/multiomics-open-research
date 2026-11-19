@@ -13,10 +13,10 @@ setup(
     packages=find_packages(),
     url="https://github.com/instadeepai/multiomics-open-research",
     license="Apache-2.0",
-    author="InstaDeep Ltd",
+    author="InstaDeep Ltd and CentraleSupélec",
     python_requires=">=3.10",
-    description="BulkRNABert: Cancer prognosis from bulk RNA-seq "
-    "based language models",
+    description="BulkRNABert, MOJO and CellScribe: language models for bulk RNA-seq, "
+    "DNA methylation and single-cell RNA-seq",
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
